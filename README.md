@@ -1,7 +1,7 @@
 # SimpliJS
 SimpliJS is an experimental library that provides variable type checking and DOM manipulation. The original purpose of the library is to facilitate myself on developing web applications while allowing me to have more control on what I really need. Later with more research on different JavaScript-related topics I try to make the library cross-browser compatible and more generic.  
   
-Please be reminded that this project is far away from mature enough to be used in a production project. While the type checking part is fully developed, the DOM manipulation module is still under experiment and is featureless. But you can expect that there will be more and more features to be added in the future. For now, please feel free to study my code and get those parts that you find it useful. If you find a bug please feel free to tell me as well. Your help to this project would be greatly apreciated.  
+Please be reminded that this project is far away from mature enough to be used in a production project. While the type checking part is fully developed, the DOM manipulation module is still under experiment and is featureless. But you can expect that there will be more and more features to be added in the future. For now, please feel free to study my code and get those parts that you find it useful. If you find a bug please feel free to tell me as well. Your help to this project would be greatly appreciated.  
   
 ## Features
 * Variable type checking
