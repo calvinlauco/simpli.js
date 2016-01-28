@@ -115,6 +115,7 @@ var simpli;
         }
 
         // distinguish between HTMLCollection|Array and HTMLElement
+        // TODO: add simpli(...).at()
         if (typeof vObject.length === "undefined" || (vObject.length === 1 && (vObject=vObject[0]))) {
             global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.ELEMENT);
             global.simpli.DOMElement.simplify(vObject.nodeName, vObject, simpli.DOMElement.ELEMENT);
@@ -458,10 +459,10 @@ var simpli;
             if (vBoth || vType === simpli.DOMElement.COLLECTION) {
                 // this refers to simpli.DOMElement
                 this.mBindedFunc[vElement]["collection"].push([pName, function(){
-                    var args = arguments;
+                    var args = Array.prototype.shift.call(arguments);
                     // this refers to the simpli element
                     this.forEach(function(currentElement) {
-                        pFunction.apply(currentElement, arguments);
+                        pFunction.apply(currentElement, args);
                     });
                     return this;
                 }]);
@@ -566,7 +567,7 @@ var simpli;
      * @function show
      * @param {string} pValue   (Optional)any valid display value that is 
      *                          non-"none". Default value is "block"
-     * @return {object}                 simpli object
+     * @return {object}         simpli object
      * @memberof global.simpli
      * @instance
      */
