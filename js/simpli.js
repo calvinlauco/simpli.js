@@ -69,7 +69,7 @@ var simpli;
     /*
      * In Internet Explorer 11, "use strict" will create a different Window
      * object from the non-strict environment. The Window under non-strict
-     * environment can be referred by Window
+     * environment can be referred by variable window
      */
     var _IE11Window = (typeof window !== "undefined")? window: global;
 
@@ -171,8 +171,7 @@ var simpli;
     /**
      * Check if a variable's type is NaN
      *
-     * isNaN() will return true when the variable is not a number but cannot
-     * determine if the variable's type is NaN
+     * isNaN() will return true when the variable is of type NaN
      *
      * @param {mixed} pVar  variable to check against
      * @param {boolean}     true if the variable is of type NaN
@@ -299,8 +298,8 @@ var simpli;
     // DOM manipulation
     /**
      * _simplify Class
-     * _simplify is an extension managment class that allows new additional
-     * function to be hooked to a specific simpli element type
+     * _simplify is an functions binding managment class that allows 
+     * additional function to be binded to a specific HTML element type
      * 
      * @class _simplify
      */
@@ -359,8 +358,8 @@ var simpli;
             if (simpli.isset(mExecBefore)) {
                 pObject = mExecBefore(pObject);
             }
-            for(var i=0, l=extension.length; i<l; i++) {
-                pObject[extension[i][0]] = mBindedFunc[i][1];
+            for(var i=0, l=mBindedFunc.length; i<l; i++) {
+                pObject[mBindedFunc[i][0]] = mBindedFunc[i][1];
             }
             if (simpli.isset(mExecAfter)) {
                 pObject = mExecAfter(pObject);
@@ -444,7 +443,8 @@ var simpli;
                     this.style.display = pValue;
                     break;
                 case "none": 
-                    throw new Error("simpli(..).show(\"none\") is not supported. Please use simpli(..).hide() instead");                    default: 
+                    throw new Error("simpli(..).show(\"none\") is not supported. Please use simpli(..).hide() instead");
+                default: 
                     throw new Error("Unrecognized display value. It should be one of the standard values");
             }
         } else {
