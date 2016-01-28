@@ -6,7 +6,7 @@
  * Copyright (c) 2016 Lau Yu Hei
  * 
  * @author Lau Yu Hei
- * @version 1.0.1
+ * @version 1.0.2
  * @license The MIT License (MIT)
  * https://opensource.org/licenses/MIT
  **/
@@ -104,22 +104,26 @@ var simpli;
             }
         } else if (simpli.isType(pSelector, simpli.OBJECT)) {
             if (simpli.getClass(pSelector) === "HTMLCollection" || 
-                simpli.isArray(pSelector) || 
+                simpli.isArray(pSelector) ||
                 (typeof pSelector.nodeType !== "undefined" && pSelector.nodeType === 1 && typeof pSelector.nodeName !== "undefined")) {
                 vObject = pSelector;
+            } else {
+                throw new Error("Invalid DOM object, it should be a DOM collection or an element")
             }
         } else {
-            throw new Error("Invalid selector, it should be a string or DOM object");
+            throw new Error("Invalid selector, it should be a string or a DOM object");
         }
 
         // distinguish between HTMLCollection|Array and HTMLElement
         if (typeof vObject.length === "undefined" || (vObject.length === 1 && (vObject=vObject[0]))) {
-            _bindings.HTMLElement.simplify(vObject);
-            if (vObject.nodeName === "SELECT") {
-                _bindings.HTMLSelectElement.simplify(vObject);
-            }
+            global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.ELEMENT);
+            global.simpli.DOMElement.simplify(vObject.nodeName, vObject, simpli.DOMElement.ELEMENT);
         } else {
-            _bindings.HTMLCollection.simplify(vObject);
+            global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.COLLECTION);
+            global.simpli.DOMElement.simplify("HTMLCollection", vObject, simpli.DOMElement.ELEMENT);
+            vObject.forEach(function(currentElement, index, array) {
+                vObject[index] = simpli(currentElement);
+            });
         }
         
         return vObject;
@@ -158,7 +162,7 @@ var simpli;
     };
 
     /** 
-     * Check if argument is set
+     * Check if a variable is set
      *
      * @param {mixed} pArg  the argument to be checked
      * @return {boolean}    whether the arugment is set
@@ -167,6 +171,43 @@ var simpli;
     global.simpli.isset = function(pArg) {
         return (typeof pArg !== "undefined" && pArg !== null);
     };
+
+    /**
+     * Check if a variable is set by recursively check whether each level of
+     * the object is set
+     * Example:
+     * If you use 
+     * if (typeof root.notDefined.notDefined.notDefined === "undefined")
+     * This line will throw an error as soon as JavaScript engine realizes 
+     * root.notDefined is undefined and no further checking is performed. Thus 
+     * breaking this line. To check for the existence of such case, you can use
+     * simpli.iterativeIsset(root, "notDefined", "notDefined", "notDefined")
+     * 
+     * 
+     * @param {object} pObject          the base object
+     * @param {integer|string} pKey[]   the key act upon the object
+     */
+    global.simpli.iterativeIsset = function() {
+        var l = arguments.length;
+        if (l < 1) {
+            throw new Error("Invalid arguments, it should contain at least an object");
+        }
+
+        var vObject = arguments[0];
+        var vArg;
+        for (var i=1; i<l; i++) {
+            var vArg = arguments[i];
+            if (!simpli.isType(vArg, [simpli.STRING, simpli.INTEGER])) {
+                throw new Error("Invalid key, it should be a string or an integer");
+            }
+
+            if (typeof vObject[vArg] === "undefined") {
+                return false;
+            }
+            vObject = vObject[vArg];
+        }
+        return true;
+    }
 
     /**
      * Check if a variable's type is NaN
@@ -195,6 +236,37 @@ var simpli;
     global.simpli.isInteger = function(pVar) {
         return (typeof pVar === "number") && (pVar%1 === 0);
     };
+
+    /**
+     * Check if a variable is within a range
+     *
+     * @param {number} pVar         variable to check against
+     * @param {number} pLowerBound  (Optional) the lower bound
+     * @param {number} pUpperBound  (Optional) the upper bound
+     * @reutrn {boolean}            whether the variable is within range
+     * @memberof global.simpli
+     */
+    global.simpli.inRange = function(pVar, pLowerBound, pUpperBound) {
+        if (!simpli.isType(pVar, simpli.NUMBER)) {
+            throw new Error("Invalid variable, it should be an number");
+        }
+        if (!simpli.isType(pLowerBound, simpli.NUMBER, simpli.OPTIONAL)) {
+            throw new Error("Invalid lower bound, it should be an number");
+        }
+        if (!simpli.isType(pLowerBound, simpli.NUMBER, simpli.OPTIONAL)) {
+            throw new Error("Invalid upper bound, it should be an number");
+        }
+        if (!simpli.isset(pLowerBound) && !simpli.isset(simpli.pUpperBound)) {
+            throw new Error("Invalid invocation, at least one bound should be specified");
+        }
+        if (simpli.isset(pLowerBound) && pVar < pLowerBound) {
+            return false;
+        }
+        if (simpli.isset(pUpperBound) && pVar > pUpperBound) {
+            return false;
+        }
+        return true;
+    }
 
     /**
      * Check if a variable is an array
@@ -245,7 +317,7 @@ var simpli;
             if (typeof pRequired !== "boolean") {
                 throw new Error("Invalid required flag, it should be a boolean");
             }
-            vRequired = pRequired
+            vRequired = pRequired;
         }
         /*
          * If the argument is optional, return true if the arugment is not
@@ -297,112 +369,195 @@ var simpli;
 
     // DOM manipulation
     /**
-     * _simplify Class
-     * _simplify is an functions binding managment class that allows 
-     * additional function to be binded to a specific HTML element type
+     * DOMElement is a binding managment object that allows additional
+     * functions to be binded to a specific HTML element type
      * 
-     * @class _simplify
+     * @class DOMElement
+     * @memberof global.simpli
      */
-    var _simplify = function() {
+    global.simpli.DOMElement = {
+        // define constants
         /**
-         * bindedFunc is an Array of 2-keys Array. Instead of using a object
-         * approach in storing name-function pair, Array of Array has better
-         * performance in iteration
+         * @property {integer}   denote ELEMENT type
+         * @memberof global.simpli.DOMElement
+         */
+        ELEMENT: 0, 
+        /**
+         * @property {integer}   denote COLLECTION type
+         * @memberof global.simpli.DOMElement
+         */
+        COLLECTION: 1, 
+        /**
+         * @property {integer}   denote BOTH types applicable
+         * @memberof global.simpli.DOMElement
+         */
+        BOTH: 2, 
+        /**
+         * a data structure storing the binded functions
          *
          * @property {function[]}   a list of binded functions
-         * @memberof _simplify#
-         * @instance
+         * @memberof global.simpli.DOMElement
          */
-        var mBindedFunc = [];
+        mBindedFunc: {}, 
         /** 
-         * @property {function}    function to be executed before binding
-         * @memberof _simplify#
-         * @instance
+         * @property {function}    list of function to be executed before 
+         *                          binding
+         * @memberof global.simpli.DOMElement
          */
-        var mExecBefore;
+        mExecBefore: {}, 
         /** 
-         * @property {function}    function to be executed after binding
-         * @memberof _simplify#
-         * @instance
+         * @property {function}    list of function to be executed after
+         *                          binding
+         * @memberof global.simpli.DOMElement
          */
-        var mExecAfter;
+        mExecAfter: {}, 
         /**
          * Allows additional function to be binded to the element type
          * 
          * @function extend
+         * @param {string} pElement     the HTML element to bind the function
          * @param {string} pName        the name of the additional function
          * @param {function} pFunction  the function body
-         * @memberof _simplify
-         * @instance
+         * @param {integer} pType       (Optional)the type of element /
+                                        collection to be binded with the
+         *                              function
+         * @memberof global.simpli.DOMElement
          */
-        this.extend = function(pName, pFunction) {
+        extend: function(pElement, pName, pFunction, pType) {
+            if (!simpli.isType(pElement, simpli.STRING)) {
+                throw new Error("Invalid element, it should be a string");
+            }
             if (!simpli.isType(pName, simpli.STRING)) {
                 throw new Error("Invalid name, it should be a string");
             }
             if (!simpli.isType(pFunction, simpli.FUNCTION)) {
                 throw new Error("Invalid function, it should be a function");
             }
-            mBindedFunc.push([pName, pFunction]);
-        }
+            if (!simpli.isType(pType, simpli.INTEGER, simpli.OPTIONAL)) {
+                throw new Error("Invalid type, it should be an integer");
+            }
+            var vType;
+            if (simpli.isset(pType)) {
+                if (!simpli.inRange(pType, 0, 2)) {
+                    throw new Error("Invalid type, it should be one of the DOMElement constants");
+                }
+                vType = pType;
+            } else {
+                // default type is both
+                vType = simpli.DOMElement.BOTH;
+            }
+            var vElement = pElement.toUpperCase();
+            var vBoth = (vType === simpli.DOMElement.BOTH);
+
+            if (typeof this.mBindedFunc[vElement] === "undefined") {
+                this.mBindedFunc[vElement] = {element: [], collection: []};
+            }
+            if (vBoth || vType === simpli.DOMElement.ELEMENT) {
+                this.mBindedFunc[vElement]["element"].push([pName, pFunction]);
+            }
+            if (vBoth || vType === simpli.DOMElement.COLLECTION) {
+                // this refers to simpli.DOMElement
+                this.mBindedFunc[vElement]["collection"].push([pName, function(){
+                    var args = arguments;
+                    // this refers to the simpli element
+                    this.forEach(function(currentElement) {
+                        pFunction.apply(currentElement, arguments);
+                    });
+                    return this;
+                }]);
+            }
+        }, 
+
         /**
          * Simplify an object by binding those extended extnesions to the provided
          * object
          *
          * @function simplify
-         * @param {object} pObject  the object to be simplified
-         * @return {object}         the simplified object
-         * @memberof _simplify
-         * @instance
+         * @param {string} pElement     the HTML element to be simplified
+         * @param {object} pObject      the object to be simplified
+         * @return {object}             the simplified object
+         * @param {integer} pType       the type of element /collection 
+         *                              to be binded with the function
+         * @memberof global.simpli.DOMElement
          */
-        this.simplify = function(pObject) {
-            if (simpli.isset(mExecBefore)) {
-                pObject = mExecBefore(pObject);
+        simplify: function(pElement, pObject, pType) {
+            if (!simpli.isType(pElement, simpli.STRING)) {
+                throw new Error("Invalid element, it should be a string");
             }
-            for(var i=0, l=mBindedFunc.length; i<l; i++) {
-                pObject[mBindedFunc[i][0]] = mBindedFunc[i][1];
+            if (!simpli.isType(pObject, simpli.OBJECT)) {
+                throw new Error("Invalid function, it should be a function");
             }
-            if (simpli.isset(mExecAfter)) {
-                pObject = mExecAfter(pObject);
+            if (!simpli.isType(pType, simpli.INTEGER)) {
+                throw new Error("Invalid type, it should be an integer");
+            }
+            if (simpli.isset(pType) && !simpli.inRange(pType, 0, 1)) {
+                throw new Error("Invalid type, it should be either ELEMENT or COLLECTION");
+            }
+            var vElement = pElement.toUpperCase();
+            if (typeof this.mBindedFunc[vElement] !== "undefined") {
+                /*
+                 * If vExecBefore and vExecAfter is defined, they must have an 
+                 * array of element and collection. So checking vExecBefore or
+                 * vExecAfter is defined is sufficient to execute the for-loop
+                 */
+                if (pType === simpli.DOMElement.ELEMENT) {
+                    // bind the functions to element object
+                    if (typeof this.mBindedFunc[vElement]["element"] !== "undefined") {
+                        var vBindedFunc = this.mBindedFunc[vElement]["element"];
+                        for(var i=0, l=vBindedFunc.length; i<l; i++) {
+                            var vFunc = vBindedFunc[i];
+                            pObject[vFunc[0]] = vFunc[1];
+                        }
+                    }
+                } else {
+                    // bind the functions to collection object
+                    if (typeof this.mBindedFunc[vElement]["collection"] !== "undefined") {
+                        var vBindedFunc = this.mBindedFunc[vElement]["collection"];
+                        for(var i=0, l=vBindedFunc.length; i<l; i++) {
+                            var vFunc = vBindedFunc[i];
+                            pObject[vFunc[0]] = vFunc[1];
+                        }
+                    }
+                }
             }
             return pObject;
         }
-        /**
-         * Callback function to be executed before simplify
-         *
-         * @function execBefore
-         * @param {function} pCallback  function to be executed
-         * @memberof _simplify
-         * @instance
-         */
-        this.execBefore = function(pCallback) {
-            if (!simpli.isType(pCallBack, simpli.FUNCTION)) {
-                throw new Error("Invalid callback, it should be a function");
-            }
-            mExecBefore = pCallback;
-        }
-        /**
-         * Callback function to be executed after simplify
-         *
-         * @function execAfter
-         * @param {function} pCallback  function to be executed
-         * @memberof _simplify
-         * @instance
-         */
-        this.execAfter = function(pCallback) {
-            if (!simpli.isType(pCallback, simpli.FUNCTION)) {
-                throw new Error("Invalid callback, it should be a function");
-            }
-            mExecAfter = pCallback;
-        }
     };
 
-    // instantiate pre-defiend functions binding management modules
-    var _bindings = {
-        HTMLElement: new _simplify(), 
-        HTMLSelectElement: new _simplify(), 
-        HTMLCollection: new _simplify()
-    };
-
+    /**
+     * Add css() method to HTMLElement. It can set the style of the element
+     *
+     * Usage:
+     * simpli({HTMLElement}).css(pStyle, pValue);
+     *
+     * @function css
+     * @param {string|string[]} pStyle      style attribute or list of style 
+     *                                      attributes
+     * @param {string|integer} pValue       he attribute's value
+     * @memberof global.simpli
+     * @instance
+     */
+    global.simpli.DOMElement.extend("HTMLElement", "css", function(pStyle, pValue) {
+        if (!simpli.isType(pStyle, [simpli.STRING, simpli.ARRAY])) {
+            throw new Error("Invalid style, it should be a string or array of string");
+        }
+        if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER])) {
+            throw new Error("Invalid value, it should be a string or number");
+        }
+        if (simpli.isArray(pStyle)) {
+            for(var i=0, l=pStyle.length; i<l; i++) {
+                this.css(pStyle[i], pValue);
+            }
+        } else {
+            // use cssText to provide cross-browser compatibility
+            var vCssText = this.style.cssText;
+            if (vCssText.length > 0 && vCssText.slice(-1)!==";") {
+                vCssText += ";";
+            }
+            this.style.cssText = vCssText + pStyle + ":" + pValue + ";";
+        }
+        return this;
+    });
     /**
      * Set the CSS display property to non-"none" value<br />
      * Usage:
@@ -415,7 +570,7 @@ var simpli;
      * @memberof global.simpli
      * @instance
      */
-    _bindings.HTMLElement.extend("show", function(pValue) {
+    global.simpli.DOMElement.extend("HTMLElement", "show", function(pValue) {
         if (!simpli.isType(pValue, simpli.STRING, simpli.OPTIONAL)) {
             throw new Error("Invalid value, it should be a string");
         }
@@ -464,7 +619,7 @@ var simpli;
      * @memberof global.simpli
      * @instance
      */
-    _bindings.HTMLElement.extend("hide", function() {
+    global.simpli.DOMElement.extend("HTMLElement", "hide", function() {
         this.style.display = "none";
         return this;
     });
@@ -482,7 +637,7 @@ var simpli;
      * @memberof global.simpli
      * @instance
      */
-    _bindings.HTMLElement.extend("fadeIn", function(pTimeout, pCallBefore, pCallAfter) {
+    global.simpli.DOMElement.extend("HTMLElement", "fadeIn", function(pTimeout, pCallBefore, pCallAfter) {
         // default timeout is 3s
         var vTimeout = 300;
         if (!simpli.isType(pTimeout, simpli.INTEGER, simpli.OPTIONAL)) {
@@ -543,7 +698,7 @@ var simpli;
      * @memberof global.simpli
      * @instance
      */
-    _bindings.HTMLElement.extend("fadeOut", function(pTimeout, pCallBefore, pCallAfter) {
+    global.simpli.DOMElement.extend("HTMLElement", "fadeOut", function(pTimeout, pCallBefore, pCallAfter) {
         // default timeout is 3s
         var vTimeout = 300;
         if (!simpli.isType(pTimeout, simpli.INTEGER, simpli.OPTIONAL)) {
@@ -587,37 +742,33 @@ var simpli;
 
         return this;
     });
-    
+
     /**
-     * Add getSelectedValue() method to HTMLSelectElement. It returns the user 
-     * selected option's value<br />
+     * Add forEach() method to HTMLElement. It adds compatibility support to 
+     * single HTMLElement<br />
      * Usage:
-     * simpli({HTMLSelectElement}).getSelectedValue();
+     * {HTMLCollection}.forEach(callback, (optional)thisArg);
      *
-     * @function getSelectedValue
-     * @return {object}                 simpli object
+     * @function forEach
+     * @param {function} pCcllback  the callback function to be called on each 
+     *                              HTMLElement, its signature should be like
+     *                              function(currentElement, index, array) {}
+     * @param Object pThisArg       (Optional) the "this" context in the 
+     *                              callback
      * @memberof global.simpli
      * @instance
      */
-    _bindings.HTMLSelectElement.extend("getSelectedValue", function() {
-        return this.options[this.selectedIndex].value;
-    });
+    global.simpli.DOMElement.extend("HTMLElement", "forEach", function(pCallback, pThisArg) {
+        if (!simpli.isType(pCallback, simpli.FUNCTION)) {
+        throw new Error("Invalid callback, it should be a function");
+        }
+        if (!simpli.isType(pThisArg, simpli.OBJECT, simpli.OPTIONAL)) {
+        throw new Error("Invalid this context, it should be an object");
+        }
+        pCallback.call(pThisArg, this, 0 , this);
 
-    /**
-     * Add getSelectedOption() method to HTMLSelectElement. It returns the 
-     * user selected option's text<br />
-     * Usage:
-     * simpli({HTMLSelectElement}).getSelectedOption();
-     *
-     * @function getSelectedOption
-     * @return {object}                 simpli object
-     * @memberof global.simpli
-     * @instance
-     */
-    _bindings.HTMLSelectElement.extend("getSelectedOption", function() {
-        return this.options[this.selectedIndex].text;
-    });
-
+        return this;
+    }, simpli.DOMElement.ELEMENT);
     /**
      * Add forEach() method to HTMLCollection. It can loop through the 
      * HTMLCollection and call the callback function to each of the
@@ -634,7 +785,7 @@ var simpli;
      * @memberof global.simpli
      * @instance
      */
-    _bindings.HTMLCollection.extend("forEach", function(pCallback, pThisArg) {
+    global.simpli.DOMElement.extend("HTMLCollection", "forEach", function(pCallback, pThisArg) {
         if (!simpli.isType(pCallback, simpli.FUNCTION)) {
         throw new Error("Invalid callback, it should be a function");
         }
@@ -653,12 +804,35 @@ var simpli;
         }
 
         return this;
+    }, simpli.DOMElement.ELEMENT);
+    
+    /**
+     * Add getSelectedValue() method to HTMLSelectElement. It returns the user 
+     * selected option's value<br />
+     * Usage:
+     * simpli({HTMLSelectElement}).getSelectedValue();
+     *
+     * @function getSelectedValue
+     * @return {object}                 simpli object
+     * @memberof global.simpli
+     * @instance
+     */
+    global.simpli.DOMElement.extend("SELECT", "getSelectedValue", function() {
+        return this.options[this.selectedIndex].value;
     });
 
-    _bindings.HTMLCollection.execAfter(function(pObject) {
-        pObject.forEach(function(currentElement, index, array) {
-            pObject[index] = simpli(currentElement);
-        })
-        return pObject;
+    /**
+     * Add getSelectedOption() method to HTMLSelectElement. It returns the 
+     * user selected option's text<br />
+     * Usage:
+     * simpli({HTMLSelectElement}).getSelectedOption();
+     *
+     * @function getSelectedOption
+     * @return {object}                 simpli object
+     * @memberof global.simpli
+     * @instance
+     */
+    global.simpli.DOMElement.extend("SELECT", "getSelectedOption", function() {
+        return this.options[this.selectedIndex].text;
     });
 })(this);
