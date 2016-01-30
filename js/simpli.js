@@ -194,8 +194,25 @@ var simpli;
         return varString.slice(8, -1);
     };
 
+
     /** 
-     * Check if a variable is set
+     * Check if a variable exists. exists() is different from isset() in the
+     * sense that exists() only considers undefined as false while isset() 
+     * considers both undefined and null as false. The exists() is better used
+     * to determine the existence of a JavaScript object while isset() is 
+     * better used in the context of argument checking or user provided content
+     *
+     * @param {mixed} pArg  the argument to be checked
+     * @return {boolean}    whether the arugment is set
+     * @memberof global.simpli
+     */
+    global.simpli.exists = function(pArg) {
+        return (typeof pArg !== "undefined");
+    };
+
+    /** 
+     * Check if a variable is set. undefined and null are both considered as 
+     * not isset
      *
      * @param {mixed} pArg  the argument to be checked
      * @return {boolean}    whether the arugment is set
@@ -501,7 +518,7 @@ var simpli;
             var vElement = pElement.toUpperCase();
             var vBoth = (vType === simpli.DOMElement.BOTH);
 
-            if (typeof this.mBindedFunc[vElement] === "undefined") {
+            if (!simpli.exists(this.mBindedFunc[vElement])) {
                 this.mBindedFunc[vElement] = {element: [], collection: []};
             }
             if (vBoth || vType === simpli.DOMElement.ELEMENT) {
@@ -552,7 +569,7 @@ var simpli;
                 throw new Error("Invalid type, it should be either ELEMENT or COLLECTION");
             }
             var vElement = pElement.toUpperCase();
-            if (typeof this.mBindedFunc[vElement] !== "undefined") {
+            if (simpli.exists(this.mBindedFunc[vElement])) {
                 /*
                  * If vExecBefore and vExecAfter is defined, they must have an 
                  * array of element and collection. So checking vExecBefore or
@@ -560,7 +577,7 @@ var simpli;
                  */
                 if (pType === simpli.DOMElement.ELEMENT) {
                     // bind the functions to element object
-                    if (typeof this.mBindedFunc[vElement]["element"] !== "undefined") {
+                    if (simpli.exists(this.mBindedFunc[vElement]["element"])) {
                         var vBindedFunc = this.mBindedFunc[vElement]["element"];
                         for(var i=0, l=vBindedFunc.length; i<l; i++) {
                             var vFunc = vBindedFunc[i];
@@ -569,7 +586,7 @@ var simpli;
                     }
                 } else {
                     // bind the functions to collection object
-                    if (typeof this.mBindedFunc[vElement]["collection"] !== "undefined") {
+                    if (simpli.exists(this.mBindedFunc[vElement]["collection"])) {
                         var vBindedFunc = this.mBindedFunc[vElement]["collection"];
                         for(var i=0, l=vBindedFunc.length; i<l; i++) {
                             var vFunc = vBindedFunc[i];
@@ -612,9 +629,9 @@ var simpli;
         }
         // default value for useCapture is false
         var vUseCapture = simpli.isset(pUseCapture)? pUseCapture: false;
-        if (typeof this.addEventListener !== "undefined") {
+        if (simpli.exists(this.addEventListener)) {
             this.addEventListener(pType, pListener, vUseCapture);
-        } else if (typeof this.attachEvent !== "undefined") {
+        } else if (simpli.exists(this.attachEvent)) {
             // IE5-8 does not have addEventListener method
             this.attachEvent("on"+pType, pListener);
         } else {
@@ -646,6 +663,127 @@ var simpli;
         this.listenTo("click", pListener, pUseCapture);
     });
 
+    // a list of HTML attribute to DOM standard property name conversion
+    var DOMProperty = {
+        "for": "htmlFor", 
+        "class": "className"
+    };
+    /**
+     * Convert an HTML attribute to its property equivalent
+     *
+     * @param {string} pAttr    the attibute to be converted
+     * @return {string}         the porperty equivalent
+     */
+    var attrToProp = function(pAttr) {
+        return (simpli.exists(DOMProperty[pAttr]))? DOMProperty[pAttr]: pAttr;
+    };
+    /**
+     * set the property of this object. This function is to provide feature to
+     * the simpli.prop() method and is not intended to be called at other 
+     * instance
+     * 
+     * @param {string} pProp                the property name
+     * @param {string|number} pValue        (Optional)the  new value for
+     *                                      the property
+     */
+    var setProp = function(pProp, pValue) {
+        var vProp = attrToProp(pProp);
+        if (simpli.exists(this[vProp])) {
+            this[vProp] = pValue;
+        } else {
+            this.setAttribute(pProp, pValue);
+        }
+    }
+    /**
+     * Add prop() method to document and HTMLElement. It can get and set the
+     * the attributes and properties of the simpli object
+     * 
+     * @param {string} pProp                the property name
+     * @param {string|number} pValue        (Optional)the  new value for
+     *                                      the property
+     * @return {object|string|undefined}    this object for set, or string 
+     *                                      or underfined for retrieval
+     */
+    global.simpli.DOMElement.extend(["HTMLElement", "document"], "prop", function(pProp, pValue) {
+        if (!simpli.isType(pProp, simpli.STRING)) {
+            throw new Error("Invalid property, it shoud be a string");
+        }
+        if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
+            throw new Error("Invalid property, it shoud be a string");
+        }
+
+        if (simpli.isset(pValue)) {
+            // set property
+            setProp.call(this, pProp, pValue);
+        } else {
+            // retrieval
+            var vProp = attrToProp(pProp);
+            var vResult;
+            // this.{property} usually works
+            if (simpli.exists(this[vProp])) {
+                vResult = this[vProp];
+                if (vResult === null) {
+                    vResult = "";
+                }
+            } else {
+                vResult = this.getAttribute(pProp);
+                /*
+                 * if the attribute does not exists, null or "" will be 
+                 * returned
+                 */
+                if(vResult === null || vResult === "") {
+                    vResult = undefined;
+                }
+            }
+            return vResult;
+        }
+    }, simpli.DOMElement.ELEMENT);
+    global.simpli.DOMElement.extend(["HTMLElement", "document"], "prop", function(pProp, pValue) {
+        if (!simpli.isType(pProp, simpli.STRING)) {
+            throw new Error("Invalid property, it shoud be a string");
+        }
+        if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
+            throw new Error("Invalid property, it shoud be a string");
+        }
+
+        if (simpli.isset(pValue)) {
+            // set property
+            this.forEach(function(currentElement) {
+                setProp.call(currentElement, pProp, pValue);
+            })
+            return this;
+        } else {
+            // retrieval
+            /*
+             * retrieve only when there is only one element, otherwise throw
+             * an error
+             */
+            if (this.length === 1) {
+                var vProp = attrToProp(pProp);
+                var vResult;
+                var elem = this[0];
+                if (simpli.exists(elem[vProp])) {
+                    vResult = elem[vProp];
+                    if (vResult === null) {
+                        vResult = "";
+                    }
+                } else {
+                    vResult = elem.getAttribute(attrToProp(pProp));
+                    /*
+                     * if the attribute does not exists, null or "" will be 
+                     * returned
+                     */
+                    if(vResult === null || vResult === "") {
+                        vResult = undefined;
+                    }
+                }
+                return vResult;
+            } else {
+                throw new Error("Unable to retrieve property from an element collection");
+            }
+        }
+    }, simpli.DOMElement.COLLECTION);
+
     /**
      * Convert a standard CSS style attribute to its camel case notation
      * e.g. font-size to fontSize
@@ -654,6 +792,9 @@ var simpli;
      * @return {string}         the attribute in camel case notation
      */
     var camelize = function(pAttr) {
+        if (!simpli.isType(pAttr, simpli.STRING)) {
+            throw new Error("Invalid attribute, it shoud be a string");
+        }
         var hump;
         var humpRegExp = /-([a-z])/;
         while((hump=pAttr.match(humpRegExp)) && hump !== null) {
@@ -663,7 +804,8 @@ var simpli;
 
     /**
      * Set the css style of an element. This function is to provide set 
-     * feature to the simpli.css() and is not intended to be called directly
+     * feature to the simpli.css() and is not intended to be called at other 
+     * instance
      *
      * Usage:
      * simpli({HTMLElement}).css(pStyle, pValue);
