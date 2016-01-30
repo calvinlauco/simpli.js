@@ -619,13 +619,13 @@ var simpli;
      */ 
     global.simpli.DOMElement.extend(["HTMLElement", "document"], "listenTo", function(pType, pListener, pUseCapture) {
         if (!simpli.isType(pType, simpli.STRING)) {
-            throw new Error("Invalid type, it shoud be a string");
+            throw new Error("Invalid type, it should be a string");
         }
         if (!simpli.isType(pListener, simpli.FUNCTION)) {
-            throw new Error("Invalid type, it shoud be a function");
+            throw new Error("Invalid type, it should be a function");
         }
         if (!simpli.isType(pUseCapture, simpli.BOOLEAN, simpli.OPTIONAL)) {
-            throw new Error("Invalid pUseCapture, it shoud be a function");
+            throw new Error("Invalid pUseCapture, it should be a function");
         }
         // default value for useCapture is false
         var vUseCapture = simpli.isset(pUseCapture)? pUseCapture: false;
@@ -639,6 +639,42 @@ var simpli;
         }
         return this;
     });
+
+    /**
+     * Add ready() method to document. It can listen to DOM content loaded 
+     * event
+     * 
+     * @param {function} pListener      the function to run when the event 
+     *                                  occurs
+     * @return {object}                 this object
+     * @memberof global.simpli
+     * @instance
+     */
+    global.simpli.DOMElement.extend("document", "ready", function(pListener) {
+        if (!simpli.isType(pListener, simpli.FUNCTION)) {
+            throw new Error("Invalid type, it should be a function");
+        }
+
+        if (simpli.exists(this.addEventListener)) {
+            // this is the same as document
+            var vReadyListener = function() {
+                document.removeEventListener("DOMContentLoaded", vReadyListener, false);
+                pListener.call(document);
+            };
+            document.addEventListener("DOMContentLoaded", vReadyListener, false);
+        } else if (simpli.exists(this.attachEvent)) {
+            // IE5-8 does not have addEventListener method
+            var vReadyStateListener = function() {
+                if (document.readyState === "complete") {
+                    document.detachEvent("onreadystatechange", vReadyStateListener);
+                }
+                pListener.call(document);
+            }
+            document.attachEvent("onreadystatechange", vReadyStateListener);
+        } else {
+            throw new Error("Event listening is not supported");
+        }
+    }, simpli.DOMElement.ELEMENT);
 
     /**
      * Add onClick() method to document and HTMLElement. It can bind an 
@@ -655,10 +691,10 @@ var simpli;
      */
     global.simpli.DOMElement.extend(["HTMLElement", "document"], "click", function(pListener, pUseCapture) {
         if (!simpli.isType(pListener, simpli.FUNCTION)) {
-            throw new Error("Invalid type, it shoud be a function");
+            throw new Error("Invalid type, it should be a function");
         }
         if (!simpli.isType(pUseCapture, simpli.BOOLEAN, simpli.OPTIONAL)) {
-            throw new Error("Invalid pUseCapture, it shoud be a function");
+            throw new Error("Invalid pUseCapture, it should be a function");
         }
         this.listenTo("click", pListener, pUseCapture);
     });
@@ -706,10 +742,10 @@ var simpli;
      */
     global.simpli.DOMElement.extend(["HTMLElement", "document"], "prop", function(pProp, pValue) {
         if (!simpli.isType(pProp, simpli.STRING)) {
-            throw new Error("Invalid property, it shoud be a string");
+            throw new Error("Invalid property, it should be a string");
         }
         if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
-            throw new Error("Invalid property, it shoud be a string");
+            throw new Error("Invalid property, it should be a string");
         }
 
         if (simpli.isset(pValue)) {
@@ -740,10 +776,10 @@ var simpli;
     }, simpli.DOMElement.ELEMENT);
     global.simpli.DOMElement.extend(["HTMLElement", "document"], "prop", function(pProp, pValue) {
         if (!simpli.isType(pProp, simpli.STRING)) {
-            throw new Error("Invalid property, it shoud be a string");
+            throw new Error("Invalid property, it should be a string");
         }
         if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
-            throw new Error("Invalid property, it shoud be a string");
+            throw new Error("Invalid property, it should be a string");
         }
 
         if (simpli.isset(pValue)) {
@@ -793,7 +829,7 @@ var simpli;
      */
     var camelize = function(pAttr) {
         if (!simpli.isType(pAttr, simpli.STRING)) {
-            throw new Error("Invalid attribute, it shoud be a string");
+            throw new Error("Invalid attribute, it should be a string");
         }
         var hump;
         var humpRegExp = /-([a-z])/;
