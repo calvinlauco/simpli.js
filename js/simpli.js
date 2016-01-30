@@ -103,10 +103,22 @@ var simpli;
                 throw new Error("Invalid selector, it should be a valid CSS selector");
             }
         } else if (simpli.isType(pSelector, simpli.OBJECT)) {
-            if (simpli.getClass(pSelector) === "HTMLCollection" || 
-                simpli.isArray(pSelector) ||
-                (typeof pSelector.nodeType !== "undefined" && pSelector.nodeType === 1 && typeof pSelector.nodeName !== "undefined")) {
+            if (simpli.getClass(pSelector) === "HTMLCollection" || simpli.isArray(pSelector)) {
+                // result from document.querySelectorAll() polyfill included
                 vObject = pSelector;
+            } else if (typeof pSelector.nodeType !== "undefined") {
+                // single element
+                if (pSelector.nodeType === 1) {
+                    // condition for HTMLElement node
+                    /*
+                     * user provide with a HTMLElement, wrap it in an Array to 
+                     * pretend to be result of querySelectorAll()
+                     */
+                    vObject = [pSelector];
+                } else if (pSelector.nodeType === 9) {
+                    // condition for document node
+                    vObject = pSelector
+                }
             } else {
                 throw new Error("Invalid DOM object, it should be a DOM collection or an element")
             }
@@ -114,19 +126,39 @@ var simpli;
             throw new Error("Invalid selector, it should be a string or a DOM object");
         }
 
+        // simplify the object
+        vObject = simplify(vObject);
+        
+        return vObject;
+    };
+
+    /**
+     * Simplify an object by adding additional functions
+     */
+    var simplify = function(vObject) {
         // distinguish between HTMLCollection|Array and HTMLElement
-        // TODO: add simpli(...).at()
-        if (typeof vObject.length === "undefined" || (vObject.length === 1 && (vObject=vObject[0]))) {
-            global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.ELEMENT);
-            global.simpli.DOMElement.simplify(vObject.nodeName, vObject, simpli.DOMElement.ELEMENT);
+        if (typeof vObject.length === "undefined") {
+            // single HTMLElement
+            // append simpli structure
+            vObject._simpli = {
+            };
+
+            if (vObject.nodeType === 9) {
+                // the DOM object is an HTMLElement or a document
+                global.simpli.DOMElement.simplify("document", vObject, simpli.DOMElement.ELEMENT);
+            } else {
+                global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.ELEMENT);
+                global.simpli.DOMElement.simplify(vObject.nodeName, vObject, simpli.DOMElement.ELEMENT);
+            }
         } else {
             global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.COLLECTION);
             global.simpli.DOMElement.simplify("HTMLCollection", vObject, simpli.DOMElement.ELEMENT);
             vObject.forEach(function(currentElement, index, array) {
-                vObject[index] = simpli(currentElement);
+                // simplify each element in a collection
+                vObject[index] = simplify(currentElement);
             });
         }
-        
+
         return vObject;
     }
 
@@ -341,8 +373,8 @@ var simpli;
             while (i<vLength) {
                 // recursively call the isType()
                 if (simpli.isType(pVar, pType[i])) {
-                return true;
-                break;
+                    return true;
+                    break;
                 }
                 i++;
             }
@@ -413,20 +445,39 @@ var simpli;
          */
         mExecAfter: {}, 
         /**
-         * Allows additional function to be binded to the element type
+         * Allows additional function to be binded to the element type. 
          * 
          * @function extend
-         * @param {string} pElement     the HTML element to bind the function
-         * @param {string} pName        the name of the additional function
-         * @param {function} pFunction  the function body
-         * @param {integer} pType       (Optional)the type of element /
-                                        collection to be binded with the
-         *                              function
+         * @param {string|string[]} pElement    the HTML element to bind the 
+         *                                      function
+         * @param {string} pName                the name of the additional
+         *                                      function
+         * @param {function} pFunction          the function body
+         * @param {integer} pType               (Optional)specific the type 
+         *                                      to be binded with the
+         *                                      function. <br />
+         *                                      If it is "element" or 
+         *                                      "collection", the function 
+         *                                      will be binded directly to the
+         *                                      object. <br /> 
+         *                                      If it is "both", it behaves 
+         *                                      the same for single element 
+         *                                      object but will wrap the 
+         *                                      function with a forEach loop
+         *                                      to apply the function to all
+         *                                      child of a collection object
+         *                                      when called`
          * @memberof global.simpli.DOMElement
          */
         extend: function(pElement, pName, pFunction, pType) {
-            if (!simpli.isType(pElement, simpli.STRING)) {
+            if (!simpli.isType(pElement, [simpli.STRING, simpli.ARRAY])) {
                 throw new Error("Invalid element, it should be a string");
+            }
+            if (simpli.isArray(pElement)) {
+                for (var i=0, l=pElement.length; i<l; i++) {
+                    this.extend(pElement[i], pName, pFunction, pType);
+                }
+                return;
             }
             if (!simpli.isType(pName, simpli.STRING)) {
                 throw new Error("Invalid name, it should be a string");
@@ -455,14 +506,20 @@ var simpli;
             }
             if (vBoth || vType === simpli.DOMElement.ELEMENT) {
                 this.mBindedFunc[vElement]["element"].push([pName, pFunction]);
+            } else if ( vType === simpli.DOMElement.COLLECTION) {
+                this.mBindedFunc[vElement]["collection"].push([pName, pFunction]);
             }
-            if (vBoth || vType === simpli.DOMElement.COLLECTION) {
+            if (vBoth) {
                 // this refers to simpli.DOMElement
                 this.mBindedFunc[vElement]["collection"].push([pName, function(){
-                    var args = Array.prototype.shift.call(arguments);
+                    var args = arguments;
                     // this refers to the simpli element
                     this.forEach(function(currentElement) {
-                        pFunction.apply(currentElement, args);
+                        if (args.length === 0) {
+                            pFunction.call(currentElement);
+                        } else {
+                            pFunction.apply(currentElement, args);
+                        }
                     });
                     return this;
                 }]);
@@ -526,25 +583,99 @@ var simpli;
     };
 
     /**
-     * Add css() method to HTMLElement. It can set the style of the element
+     * Add listenTo() method to document and HTMLElement. It can listen to 
+     * specific type of event
+     * 
+     * Usage:
+     * simpli({HTMLElement|document}).listenTo(...);
+     *
+     * @param {string} pType            a string representing the event type 
+     *                                  to listen for
+     * @param {function} pListener      the function to run when the event 
+     *                                  occurs
+     * @param {boolean} pUseCapture     whether the event should be executed 
+     *                                  in the capturing or in the bubbling 
+     *                                  phase
+     * @return {object}                 this object
+     * @memberof global.simpli
+     * @instance
+     */ 
+    global.simpli.DOMElement.extend(["HTMLElement", "document"], "listenTo", function(pType, pListener, pUseCapture) {
+        if (!simpli.isType(pType, simpli.STRING)) {
+            throw new Error("Invalid type, it shoud be a string");
+        }
+        if (!simpli.isType(pListener, simpli.FUNCTION)) {
+            throw new Error("Invalid type, it shoud be a function");
+        }
+        if (!simpli.isType(pUseCapture, simpli.BOOLEAN, simpli.OPTIONAL)) {
+            throw new Error("Invalid pUseCapture, it shoud be a function");
+        }
+        // default value for useCapture is false
+        var vUseCapture = simpli.isset(pUseCapture)? pUseCapture: false;
+        if (typeof this.addEventListener !== "undefined") {
+            this.addEventListener(pType, pListener, vUseCapture);
+        } else if (typeof this.attachEvent !== "undefined") {
+            // IE5-8 does not have addEventListener method
+            this.attachEvent("on"+pType, pListener);
+        } else {
+            throw new Error("Event listening is not supported");
+        }
+        return this;
+    });
+
+    /**
+     * Add onClick() method to document and HTMLElement. It can bind an 
+     * listener to the onClick event
+     * 
+     * @param {function} pListener      the function to run when the event 
+     *                                  occurs
+     * @param {boolean} pUseCapture     whether the event should be executed 
+     *                                  in the capturing or in the bubbling 
+     *                                  phase
+     * @return {object}                 this object
+     * @memberof global.simpli
+     * @instance
+     */
+    global.simpli.DOMElement.extend(["HTMLElement", "document"], "click", function(pListener, pUseCapture) {
+        if (!simpli.isType(pListener, simpli.FUNCTION)) {
+            throw new Error("Invalid type, it shoud be a function");
+        }
+        if (!simpli.isType(pUseCapture, simpli.BOOLEAN, simpli.OPTIONAL)) {
+            throw new Error("Invalid pUseCapture, it shoud be a function");
+        }
+        this.listenTo("click", pListener, pUseCapture);
+    });
+
+    /**
+     * Convert a standard CSS style attribute to its camel case notation
+     * e.g. font-size to fontSize
+     *
+     * @param {string} pAttr    the attribute to be camelized
+     * @return {string }        the attribute in camel case notation
+     */
+    var camelize = function(pAttr) {
+        var hump;
+        var humpRegExp = /-([a-z])/;
+        while((hump=pAttr.match(humpRegExp)) && hump !== null) {
+            pAttr = pAttr.replace(hump, hump.toUpperCase());
+        }
+    }
+
+    /**
+     * Set the css style of an element. This function is to provide set 
+     * feature to the simpli.css() and is not intended to be called directly
      *
      * Usage:
      * simpli({HTMLElement}).css(pStyle, pValue);
      *
-     * @function css
      * @param {string|string[]} pStyle      style attribute or list of style 
      *                                      attributes
-     * @param {string|integer} pValue       he attribute's value
-     * @memberof global.simpli
-     * @instance
+     * @param {string|integer} pValue       (Optional)the attribute's value
+     *                                      If not provided, it is for
+     *                                      retrieval.
+     * @return {object}                     this object
      */
-    global.simpli.DOMElement.extend("HTMLElement", "css", function(pStyle, pValue) {
-        if (!simpli.isType(pStyle, [simpli.STRING, simpli.ARRAY])) {
-            throw new Error("Invalid style, it should be a string or array of string");
-        }
-        if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER])) {
-            throw new Error("Invalid value, it should be a string or number");
-        }
+    var setCss = function(pStyle, pValue) {
         if (simpli.isArray(pStyle)) {
             for(var i=0, l=pStyle.length; i<l; i++) {
                 this.css(pStyle[i], pValue);
@@ -557,8 +688,109 @@ var simpli;
             }
             this.style.cssText = vCssText + pStyle + ":" + pValue + ";";
         }
+            
+        return this;
+    }
+
+    /**
+     * Add css() method to HTMLElement. It can get and set the style of the 
+     * element
+     *
+     * Usage:
+     * simpli({HTMLElement}).css(pStyle, pValue);
+     *
+     * @function css
+     * @param {string|string[]} pStyle      style attribute or list of style 
+     *                                      attributes
+     * @param {string|integer} pValue       (Optional)the attribute's value
+     *                                      If not provided, it is for
+     *                                      retrieval
+     * @return {string|object}              string when doing retrieval, this 
+     *                                      object when doing set
+     * @memberof global.simpli
+     * @instance
+     */
+    global.simpli.DOMElement.extend("HTMLElement", "css", function(pStyle, pValue) {
+        if (!simpli.isType(pStyle, [simpli.STRING, simpli.ARRAY])) {
+            throw new Error("Invalid style, it should be a string or array of string");
+        }
+        if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
+            throw new Error("Invalid value, it should be a string or number");
+        }
+        // distinguish beteween set and get
+        if (simpli.isset(pValue)) {
+            // set style
+            setCss.call(this, pStyle, pValue);
+        } else {
+            // retrieval
+            if (typeof this.currentStyle !== "undefined") {
+                /* 
+                 * IE support currentStyle object but the style property has 
+                 * to be withou the "-" and the following words have their
+                 * frist character capitalized
+                 */
+                return this.currentStyle[camelize(pStyle)];
+            } else if (typeof window.getComputedStyle !== "undefined") {
+                return document.defaultView.getComputedStyle(this, null).getPropertyValue(pStyle);
+            }
+        }
+        return this;
+    }, simpli.DOMElement.ELEMENT);
+    global.simpli.DOMElement.extend("HTMLElement", "css", function(pStyle, pValue) {
+        if (!simpli.isType(pStyle, [simpli.STRING, simpli.ARRAY])) {
+            throw new Error("Invalid style, it should be a string or array of string");
+        }
+        if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
+            throw new Error("Invalid value, it should be a string or number");
+        }
+        // distinguish beteween set and get
+        if (simpli.isset(pValue)) {
+            // set style
+            this.forEach(function(currentElement) {
+                setCss.call(currentElement, pStyle, pValue);
+            });
+        } else {
+            // retrieval
+            /*
+             * retrieve only when there is only one element, otherwise throw
+             * an error
+             */
+            if (this.length === 1) {
+                return this[0].css(pStyle);
+            } else {
+                throw new Error("Unable to retrieve css from an element collection");
+            }
+        }
+        return this;
+    }, simpli.DOMElement.COLLECTION);
+
+    /**
+     * Add removeCss() to HTMLElement. It can remove inline css from the 
+     * element
+     * 
+     * @function removeCss
+     * @param {string|string[]} pStyle      style attribute or list of style 
+     *                                      attributes
+     * @return {object}         this object
+     * @memberof global.simpli
+     * @instance
+     */
+    global.simpli.DOMElement.extend("HTMLElement", "removeCss", function(pStyle) {
+        if (!simpli.isType(pStyle, [simpli.STRING, simpli.ARRAY])) {
+            throw new Error("Invalid style, it should be a string or array of string");
+        }
+        if (simpli.isArray(pStyle)) {
+            for(var i=0, l=pStyle.length; i<l; i++) {
+                this.removeCss(pStyle[i]);
+            }
+        } else {
+            var vStyleRegExp = new RegExp(pStyle+":[^;]+;");
+
+            this.style.cssText = this.style.cssText.replace(vStyleRegExp, "");
+        }
         return this;
     });
+
     /**
      * Set the CSS display property to non-"none" value<br />
      * Usage:
@@ -567,7 +799,7 @@ var simpli;
      * @function show
      * @param {string} pValue   (Optional)any valid display value that is 
      *                          non-"none". Default value is "block"
-     * @return {object}         simpli object
+     * @return {object}         this object
      * @memberof global.simpli
      * @instance
      */
@@ -616,7 +848,7 @@ var simpli;
      * simpli({HTMLElement}).hide()
      * 
      * @function hide
-     * @return {object}     simpli object
+     * @return {object}     this object
      * @memberof global.simpli
      * @instance
      */
@@ -634,7 +866,7 @@ var simpli;
      * @param {integer} pTimeout        (Optional)time to fade in
      * @param {function} pCallBefore    (Optional)callback before fade in
      * @param {function} pCallAFter     (Optional)callback after fade in
-     * @return {object}     simpli object
+     * @return {object}                 this object
      * @memberof global.simpli
      * @instance
      */
@@ -655,7 +887,7 @@ var simpli;
         }
 
         // set the element opacity to 0 before fading in
-        this.css(["transition", "WebkitTransition", "MozTransition"], "opacity 0s");
+        this.css(["transition", "-webkit-ransition", "-moz-transition"], "opacity 0s");
         this.css("opacity", 0);
         this.css("filter", "alpha(opacity=0)");
         if (simpli.isset(pCallBefore)) {
@@ -695,7 +927,7 @@ var simpli;
      * @param {integer} pTimeout        (Optional)time to fade out
      * @param {function} pCallBefore    (Optional)callback before fade out
      * @param {function} pCallAFter     (Optional)callback after fade out
-     * @return {object}                 simpli object
+     * @return {object}                 this object
      * @memberof global.simpli
      * @instance
      */
@@ -714,7 +946,7 @@ var simpli;
         if (simpli.isset(pTimeout)) {
             vTimeout = pTimeout;
         }
-        this.css(["transition", "WebkitTransition", "MozTransition"], "opacity 0s");
+        this.css(["transition", "-webkit-ransition", "-moz-transition"], "opacity 0s");
         this.css("opacity", 1);
         this.css("filter", "alpha(opacity=100)");
         if (simpli.isset(pCallBefore)) {
@@ -756,6 +988,7 @@ var simpli;
      *                              function(currentElement, index, array) {}
      * @param Object pThisArg       (Optional) the "this" context in the 
      *                              callback
+     * @return {object}             this object
      * @memberof global.simpli
      * @instance
      */
@@ -783,6 +1016,7 @@ var simpli;
      *                              function(currentElement, index, array) {}
      * @param Object pThisArg       (Optional) the "this" context in the 
      *                              callback
+     * @return {object}             this object
      * @memberof global.simpli
      * @instance
      */
@@ -814,7 +1048,7 @@ var simpli;
      * simpli({HTMLSelectElement}).getSelectedValue();
      *
      * @function getSelectedValue
-     * @return {object}                 simpli object
+     * @return {object}     this object
      * @memberof global.simpli
      * @instance
      */
@@ -829,7 +1063,7 @@ var simpli;
      * simpli({HTMLSelectElement}).getSelectedOption();
      *
      * @function getSelectedOption
-     * @return {object}                 simpli object
+     * @return {object}     this object
      * @memberof global.simpli
      * @instance
      */
