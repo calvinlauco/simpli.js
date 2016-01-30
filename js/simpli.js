@@ -196,9 +196,9 @@ var simpli;
 
 
     /** 
-     * Check if a variable exists. exists() is different from isset() in the
-     * sense that exists() only considers undefined as false while isset() 
-     * considers both undefined and null as false. The exists() is better used
+     * Check if a variable exists. exist() is different from isset() in the
+     * sense that exist() only considers undefined as false while isset() 
+     * considers both undefined and null as false. The exist() is better used
      * to determine the existence of a JavaScript object while isset() is 
      * better used in the context of argument checking or user provided content
      *
@@ -206,7 +206,7 @@ var simpli;
      * @return {boolean}    whether the arugment is set
      * @memberof global.simpli
      */
-    global.simpli.exists = function(pArg) {
+    global.simpli.exist = function(pArg) {
         return (typeof pArg !== "undefined");
     };
 
@@ -518,7 +518,7 @@ var simpli;
             var vElement = pElement.toUpperCase();
             var vBoth = (vType === simpli.DOMElement.BOTH);
 
-            if (!simpli.exists(this.mBindedFunc[vElement])) {
+            if (!simpli.exist(this.mBindedFunc[vElement])) {
                 this.mBindedFunc[vElement] = {element: [], collection: []};
             }
             if (vBoth || vType === simpli.DOMElement.ELEMENT) {
@@ -569,7 +569,7 @@ var simpli;
                 throw new Error("Invalid type, it should be either ELEMENT or COLLECTION");
             }
             var vElement = pElement.toUpperCase();
-            if (simpli.exists(this.mBindedFunc[vElement])) {
+            if (simpli.exist(this.mBindedFunc[vElement])) {
                 /*
                  * If vExecBefore and vExecAfter is defined, they must have an 
                  * array of element and collection. So checking vExecBefore or
@@ -577,7 +577,7 @@ var simpli;
                  */
                 if (pType === simpli.DOMElement.ELEMENT) {
                     // bind the functions to element object
-                    if (simpli.exists(this.mBindedFunc[vElement]["element"])) {
+                    if (simpli.exist(this.mBindedFunc[vElement]["element"])) {
                         var vBindedFunc = this.mBindedFunc[vElement]["element"];
                         for(var i=0, l=vBindedFunc.length; i<l; i++) {
                             var vFunc = vBindedFunc[i];
@@ -586,7 +586,7 @@ var simpli;
                     }
                 } else {
                     // bind the functions to collection object
-                    if (simpli.exists(this.mBindedFunc[vElement]["collection"])) {
+                    if (simpli.exist(this.mBindedFunc[vElement]["collection"])) {
                         var vBindedFunc = this.mBindedFunc[vElement]["collection"];
                         for(var i=0, l=vBindedFunc.length; i<l; i++) {
                             var vFunc = vBindedFunc[i];
@@ -598,6 +598,22 @@ var simpli;
             return pObject;
         }
     };
+
+    /**
+     * Add parent() method to document and HTMLElement. It can return the 
+     * parent node of the simpli object
+     *
+     * @return {object}     parent simpli object
+     */
+    global.simpli.DOMElement.extend("document", "parent", function() {
+        return undefined;
+    }, simpli.DOMElement.ELEMENT);
+    global.simpli.DOMElement.extend("HTMLElement", "parent", function() {
+        return simpli(this.parentNode);
+    }, simpli.DOMElement.ELEMENT);
+    globa.simpli.DOMElement.extend(["document", "HTMLElement"], "parent", function() {
+        throw new Error("Unable to get parent of an element collection")
+    }, simpli.DOMElement.ELEMENT);
 
     /**
      * Add listenTo() method to document and HTMLElement. It can listen to 
@@ -629,9 +645,9 @@ var simpli;
         }
         // default value for useCapture is false
         var vUseCapture = simpli.isset(pUseCapture)? pUseCapture: false;
-        if (simpli.exists(this.addEventListener)) {
+        if (simpli.exist(this.addEventListener)) {
             this.addEventListener(pType, pListener, vUseCapture);
-        } else if (simpli.exists(this.attachEvent)) {
+        } else if (simpli.exist(this.attachEvent)) {
             // IE5-8 does not have addEventListener method
             this.attachEvent("on"+pType, pListener);
         } else {
@@ -639,6 +655,14 @@ var simpli;
         }
         return this;
     });
+
+    /**
+     * Add stopListenTo() method to document and HTMLElement. It can stop the 
+     * element from listening to event or unbind an listener form certain
+     * event
+     *
+     * TODO:
+     */
 
     /**
      * Add ready() method to document. It can listen to DOM content loaded 
@@ -655,14 +679,14 @@ var simpli;
             throw new Error("Invalid type, it should be a function");
         }
 
-        if (simpli.exists(this.addEventListener)) {
+        if (simpli.exist(this.addEventListener)) {
             // this is the same as document
             var vReadyListener = function() {
                 document.removeEventListener("DOMContentLoaded", vReadyListener, false);
                 pListener.call(document);
             };
             document.addEventListener("DOMContentLoaded", vReadyListener, false);
-        } else if (simpli.exists(this.attachEvent)) {
+        } else if (simpli.exist(this.attachEvent)) {
             // IE5-8 does not have addEventListener method
             var vReadyStateListener = function() {
                 if (document.readyState === "complete") {
@@ -711,7 +735,7 @@ var simpli;
      * @return {string}         the porperty equivalent
      */
     var attrToProp = function(pAttr) {
-        return (simpli.exists(DOMProperty[pAttr]))? DOMProperty[pAttr]: pAttr;
+        return (simpli.exist(DOMProperty[pAttr]))? DOMProperty[pAttr]: pAttr;
     };
     /**
      * set the property of this object. This function is to provide feature to
@@ -724,7 +748,7 @@ var simpli;
      */
     var setProp = function(pProp, pValue) {
         var vProp = attrToProp(pProp);
-        if (simpli.exists(this[vProp])) {
+        if (simpli.exist(this[vProp])) {
             this[vProp] = pValue;
         } else {
             this.setAttribute(pProp, pValue);
@@ -756,7 +780,7 @@ var simpli;
             var vProp = attrToProp(pProp);
             var vResult;
             // this.{property} usually works
-            if (simpli.exists(this[vProp])) {
+            if (simpli.exist(this[vProp])) {
                 vResult = this[vProp];
                 if (vResult === null) {
                     vResult = "";
@@ -798,7 +822,7 @@ var simpli;
                 var vProp = attrToProp(pProp);
                 var vResult;
                 var elem = this[0];
-                if (simpli.exists(elem[vProp])) {
+                if (simpli.exist(elem[vProp])) {
                     vResult = elem[vProp];
                     if (vResult === null) {
                         vResult = "";
