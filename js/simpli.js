@@ -651,7 +651,7 @@ var simpli;
      * e.g. font-size to fontSize
      *
      * @param {string} pAttr    the attribute to be camelized
-     * @return {string }        the attribute in camel case notation
+     * @return {string}         the attribute in camel case notation
      */
     var camelize = function(pAttr) {
         var hump;
@@ -670,7 +670,7 @@ var simpli;
      *
      * @param {string|string[]} pStyle      style attribute or list of style 
      *                                      attributes
-     * @param {string|integer} pValue       (Optional)the attribute's value
+     * @param {string|number} pValue        (Optional)the attribute's value
      *                                      If not provided, it is for
      *                                      retrieval.
      * @return {object}                     this object
@@ -702,7 +702,7 @@ var simpli;
      * @function css
      * @param {string|string[]} pStyle      style attribute or list of style 
      *                                      attributes
-     * @param {string|integer} pValue       (Optional)the attribute's value
+     * @param {string|number} pValue        (Optional)the attribute's value
      *                                      If not provided, it is for
      *                                      retrieval
      * @return {string|object}              string when doing retrieval, this 
