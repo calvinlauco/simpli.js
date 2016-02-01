@@ -74,6 +74,36 @@ var simpli;
     var _IE11Window = (typeof window !== "undefined")? window: global;
 
     /**
+     * Simplify an object by adding additional functions
+     */
+    var simplify = function(vObject) {
+        // distinguish between HTMLCollection|Array and HTMLElement
+        if (typeof vObject.length === "undefined") {
+            // single HTMLElement
+            // append simpli structure
+            vObject._simpli = {
+            };
+
+            if (vObject.nodeType === 9) {
+                // the DOM object is an HTMLElement or a document
+                global.simpli.DOMElement.simplify("document", vObject, simpli.DOMElement.ELEMENT);
+            } else {
+                global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.ELEMENT);
+                global.simpli.DOMElement.simplify(vObject.nodeName, vObject, simpli.DOMElement.ELEMENT);
+            }
+        } else {
+            global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.COLLECTION);
+            global.simpli.DOMElement.simplify("HTMLCollection", vObject, simpli.DOMElement.ELEMENT);
+            vObject.forEach(function(currentElement, index, array) {
+                // simplify each element in a collection
+                vObject[index] = simplify(currentElement);
+            });
+        }
+
+        return vObject;
+    }
+
+    /**
      * @name simpli
      * @namespace
      * @memberof global
@@ -132,35 +162,97 @@ var simpli;
         return vObject;
     };
 
+    // data structure
     /**
-     * Simplify an object by adding additional functions
+     * simpli.queue is a simple queue structure
+     *
+     * @class queue
+     * @memberof global.simpli
      */
-    var simplify = function(vObject) {
-        // distinguish between HTMLCollection|Array and HTMLElement
-        if (typeof vObject.length === "undefined") {
-            // single HTMLElement
-            // append simpli structure
-            vObject._simpli = {
-            };
-
-            if (vObject.nodeType === 9) {
-                // the DOM object is an HTMLElement or a document
-                global.simpli.DOMElement.simplify("document", vObject, simpli.DOMElement.ELEMENT);
-            } else {
-                global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.ELEMENT);
-                global.simpli.DOMElement.simplify(vObject.nodeName, vObject, simpli.DOMElement.ELEMENT);
+    (function() {
+        var mStruct = [], 
+            mHead = [], 
+            mTail = [], 
+            uid = 0;
+        global.simpli.queue = function() {
+            // make simpli.queue() new-Agnostic
+            if (!(this instanceof simpli.queue)) {
+                return new simpli.queue();
             }
-        } else {
-            global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.COLLECTION);
-            global.simpli.DOMElement.simplify("HTMLCollection", vObject, simpli.DOMElement.ELEMENT);
-            vObject.forEach(function(currentElement, index, array) {
-                // simplify each element in a collection
-                vObject[index] = simplify(currentElement);
-            });
-        }
+            var vUid = this.uid = uid++;
+            mStruct[vUid] = [];
+            mHead[vUid] = 0;
+            mTail[vUid] = 0;
+        };
+        global.simpli.queue.prototype.isEmpty = function() {
+            var vUid = this.uid;
+            return (mTail[vUid] === mHead[vUid]);
+        };
+        global.simpli.queue.prototype.enqueue = function(element) {
+            if (!simpli.isset(element)) {
+                throw new Error("Missing element, it should be presented");
+            }
+            var vUid = this.uid;
+            mStruct[vUid][mTail[vUid]++] = element;
+        };
+        global.simpli.queue.prototype.dequeue = function() {
+            if (this.isEmpty()) {
+                return null;
+            }
+            var vUid = this.uid;
+            var vResult = mStruct[vUid][mHead[vUid]];
+            mStruct[vUid][mHead[vUid]++] = null;
+            return vResult;
+        };
+        global.simpli.queue.prototype.front = function() {
+            if (this.isEmpty()) {
+                return null;
+            }
+            var vUid = this.uid;
+            return mStruct[vUid][mHead[vUid]];
+        };
+    })();
 
-        return vObject;
-    }
+    (function() {
+        var mStruct = [], 
+            mTop = [], 
+            uid = -1;
+        global.simpli.stack = function() {
+            if(!(this instanceof simpli.stack)) {
+                return new simpli.stack();
+            }
+            var vUid = this.uid = uid++;
+            mStruct[vUid] = [];
+            mTop[vUid] = 0;
+        };
+        global.simpli.stack.prototype.isEmpty = function() {
+            var vUid = this.uid;
+            return (mTop[vUid] === 0);
+        };
+        global.simpli.stack.prototype.push = function(element) {
+            if (!simpli.isset(element)) {
+                throw new Error("Missing element, it should be presented");
+            }
+            var vUid = this.uid;
+            mStruct[vUid][++mTop[vUid]] = element;
+        };
+        global.simpli.stack.prototype.pop = function() {
+            if (this.isEmpty()) {
+                return null;
+            }
+            var vUid = this.uid;
+            var vResult = mStruct[vUid][mTop[vUid]];
+            mStruct[vUid][mTop[vUid]--] = null;
+            return vResult;
+        };
+        global.simpli.stack.prototype.top = function() {
+            if (this.isEmpty()) {
+                return null;
+            }
+            var vUid = this.uid;
+            return mStruct[vUid][mTop[vUid]];
+        }
+    })();
 
     simpli.STRING = "string";
     simpli.NUMBER = "number";
@@ -611,9 +703,34 @@ var simpli;
     global.simpli.DOMElement.extend("HTMLElement", "parent", function() {
         return simpli(this.parentNode);
     }, simpli.DOMElement.ELEMENT);
-    globa.simpli.DOMElement.extend(["document", "HTMLElement"], "parent", function() {
-        throw new Error("Unable to get parent of an element collection")
-    }, simpli.DOMElement.ELEMENT);
+    global.simpli.DOMElement.extend(["document", "HTMLElement"], "parent", function() {
+        if (this.length === 1) {
+            return this[0].parent();
+        } else {
+            throw new Error("Unable to get parent of an element collection");
+        }
+    }, simpli.DOMElement.COLLECTION);
+
+    /**
+     * Add siblings() method to HTMLElement. It can return a list of siblings
+     * with the given selector
+     *
+     * TODO:
+     */
+
+    /**
+     * Add children() method to HTMLElement. It can return a list of children
+     * with the given selector
+     *
+     * TODO:
+     */
+
+    /**
+     * Add descendants() method to HTMLElement. It can return a list of 
+     * descendants with the given selector
+     *
+     * TODO:
+     */
 
     /**
      * Add listenTo() method to document and HTMLElement. It can listen to 
