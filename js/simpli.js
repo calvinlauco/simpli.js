@@ -6,7 +6,7 @@
  * Copyright (c) 2016 Lau Yu Hei
  * 
  * @author Lau Yu Hei
- * @version 1.0.2
+ * @version 1.0.3
  * @license The MIT License (MIT)
  * https://opensource.org/licenses/MIT
  **/

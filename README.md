@@ -17,7 +17,7 @@ Please be reminded that this project is far away from mature enough to be used i
 ```  
 
 ## Usage 
-A full API documentation can be found on [http://yuhlau.github.io/simplijs/doc/](http://yuhlau.github.io/simplijs/doc/). The current document is produced based on version 1.0.1. It guides you how to use the type checking functions and how to create a simpli DOM object.  
+A full API documentation can be found on [http://yuhlau.github.io/simplijs/doc/](http://yuhlau.github.io/simplijs/doc/). The current document is produced based on the latest version. It guides you how to use the type checking functions and how to create a simpli DOM object.  
   
 Moreover, you can also have a look to the unit test in the folder ```unitTest/``` or [Hosted Unit Test Page](http://yuhlau.github.io/simplijs/unitTest/). It can gives you some ideas on how those functions are used. Noted that IE7 or below will always fail test case 7 and 21 because they do not have HTMLDivElement and the querySelectorAll() is a polyfill, so they behave differently from the expected result. On the other hand, unit test of DOM manipulation is not available yet because most of the functions are still under experiment.  
   
@@ -34,6 +34,11 @@ Moreover, you can also have a look to the unit test in the folder ```unitTest/``
 * Google Chrome on iOS (latest)
   
 ## History
+* 2 Feb, 2016. Version 1.0.3
+  * Standardize simpli(...)
+  * Add several simpli(...) method
+  * Add simpli.exist()
+  * Add queue and stack datastructure
 * 29 Jan, 2016, Version 1.0.2
   * Update to version 1.0.2
   * Redesign simpli(...) functions binding mechanism
