@@ -83,6 +83,9 @@ var simpli;
             // append simpli structure
             vObject._simpli = {
             };
+            vObject.toString = function() {
+                return "[object simpliElement]";
+            }
 
             if (vObject.nodeType === 9) {
                 // the DOM object is an HTMLElement or a document
@@ -92,6 +95,9 @@ var simpli;
                 global.simpli.DOMElement.simplify(vObject.nodeName, vObject, simpli.DOMElement.ELEMENT);
             }
         } else {
+            vObject.toString = function() {
+                return "[object simpliCollection]";
+            }
             global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.COLLECTION);
             global.simpli.DOMElement.simplify("HTMLCollection", vObject, simpli.DOMElement.ELEMENT);
             vObject.forEach(function(currentElement, index, array) {
@@ -161,6 +167,9 @@ var simpli;
         
         return vObject;
     };
+    global.simpli.prototype.toString = function() {
+        return "[object simpli]";
+    };
 
     // data structure
     /**
@@ -170,38 +179,34 @@ var simpli;
      * @memberof global.simpli
      */
     (function() {
-        var mStruct = [], 
-            mHead = [], 
-            mTail = [], 
-            uid = 0;
         global.simpli.queue = function() {
             // make simpli.queue() new-Agnostic
             if (!(this instanceof simpli.queue)) {
                 return new simpli.queue();
             }
             var vUid = this.uid = uid++;
-            mStruct[vUid] = [];
-            mHead[vUid] = 0;
-            mTail[vUid] = 0;
+            this.mStruct = [];
+            this.mHead = 0;
+            this.mTail = 0;
         };
         global.simpli.queue.prototype.isEmpty = function() {
             var vUid = this.uid;
-            return (mTail[vUid] === mHead[vUid]);
+            return (this.mTail === this.mHead);
         };
         global.simpli.queue.prototype.enqueue = function(element) {
             if (!simpli.isset(element)) {
                 throw new Error("Missing element, it should be presented");
             }
             var vUid = this.uid;
-            mStruct[vUid][mTail[vUid]++] = element;
+            this.mStruct[this.mTail++] = element;
         };
         global.simpli.queue.prototype.dequeue = function() {
             if (this.isEmpty()) {
                 return null;
             }
             var vUid = this.uid;
-            var vResult = mStruct[vUid][mHead[vUid]];
-            mStruct[vUid][mHead[vUid]++] = null;
+            var vResult = this.mStruct[this.mHead];
+            this.mStruct[this.mHead++] = null;
             return vResult;
         };
         global.simpli.queue.prototype.front = function() {
@@ -209,40 +214,43 @@ var simpli;
                 return null;
             }
             var vUid = this.uid;
-            return mStruct[vUid][mHead[vUid]];
+            return this.mStruct[this.mHead];
         };
     })();
 
+    /**
+     * simpli.queue is a simple queue structure
+     *
+     * @class stack
+     * @memberof global.simpli
+     */
     (function() {
-        var mStruct = [], 
-            mTop = [], 
-            uid = -1;
         global.simpli.stack = function() {
             if(!(this instanceof simpli.stack)) {
                 return new simpli.stack();
             }
             var vUid = this.uid = uid++;
-            mStruct[vUid] = [];
-            mTop[vUid] = 0;
+            this.mStruct = [];
+            this.mTop = 0;
         };
         global.simpli.stack.prototype.isEmpty = function() {
             var vUid = this.uid;
-            return (mTop[vUid] === 0);
+            return (this.mTop === 0);
         };
         global.simpli.stack.prototype.push = function(element) {
             if (!simpli.isset(element)) {
                 throw new Error("Missing element, it should be presented");
             }
             var vUid = this.uid;
-            mStruct[vUid][++mTop[vUid]] = element;
+            this.mStruct[++this.mTop] = element;
         };
         global.simpli.stack.prototype.pop = function() {
             if (this.isEmpty()) {
                 return null;
             }
             var vUid = this.uid;
-            var vResult = mStruct[vUid][mTop[vUid]];
-            mStruct[vUid][mTop[vUid]--] = null;
+            var vResult = this.mStruct[this.mTop];
+            this.mStruct[this.mTop--] = null;
             return vResult;
         };
         global.simpli.stack.prototype.top = function() {
@@ -250,7 +258,29 @@ var simpli;
                 return null;
             }
             var vUid = this.uid;
-            return mStruct[vUid][mTop[vUid]];
+            return this.mStruct[this.mTop];
+        };
+    })();
+
+    (function() {
+        global.simpli.node = function() {
+            if (!(this instanceof simpli.node)) {
+                return new simpli.node();
+            }
+            this.left = null;
+            this.value = null;
+            this.right = null;
+            this.parent = null;
+        }
+        global.simpli.binarySearchTree = function() {
+            if (!(this instanceof simpli.binarySearchTree)) {
+                return new simpli.binarySearchTree();
+            }
+            this.mStruct = [];
+            this.mLast = 1;
+        }
+        global.simpli.binarySearchTree.prototype.toString = function() {
+            console.log(mStruct[this.id]);
         }
     })();
 
@@ -325,9 +355,8 @@ var simpli;
      * breaking this line. To check for the existence of such case, you can use
      * simpli.iterativeIsset(root, "notDefined", "notDefined", "notDefined")
      * 
-     * 
      * @param {object} pObject          the base object
-     * @param {integer|string} pKey[]   the key act upon the object
+     * @param {...integer|string} pKey  the key to act upon the object
      */
     global.simpli.iterativeIsset = function() {
         var l = arguments.length;
@@ -520,36 +549,36 @@ var simpli;
     global.simpli.DOMElement = {
         // define constants
         /**
-         * @property {integer}   denote ELEMENT type
+         * @property {integer} ELEMENT  denote ELEMENT type
          * @memberof global.simpli.DOMElement
          */
         ELEMENT: 0, 
         /**
-         * @property {integer}   denote COLLECTION type
+         * @property {integer} COLLECTION   denote COLLECTION type
          * @memberof global.simpli.DOMElement
          */
         COLLECTION: 1, 
         /**
-         * @property {integer}   denote BOTH types applicable
+         * @property {integer} BOTH     denote BOTH types applicable
          * @memberof global.simpli.DOMElement
          */
         BOTH: 2, 
         /**
          * a data structure storing the binded functions
          *
-         * @property {function[]}   a list of binded functions
+         * @property {function[]} mBindedFunc   a list of binded functions
          * @memberof global.simpli.DOMElement
          */
         mBindedFunc: {}, 
         /** 
-         * @property {function}    list of function to be executed before 
-         *                          binding
+         * @property {function} mExecBefore     list of function to be 
+         *                                      executed before binding
          * @memberof global.simpli.DOMElement
          */
         mExecBefore: {}, 
         /** 
-         * @property {function}    list of function to be executed after
-         *                          binding
+         * @property {function} mExecAfter  list of function to be executed 
+         *                                  after binding
          * @memberof global.simpli.DOMElement
          */
         mExecAfter: {}, 
@@ -695,7 +724,13 @@ var simpli;
      * Add parent() method to document and HTMLElement. It can return the 
      * parent node of the simpli object
      *
+     * Usage:
+     * simpli({HTMLElement|document}).parent();
+     * 
+     * @function parent
      * @return {object}     parent simpli object
+     * @memberof global.simpli
+     * @instance
      */
     global.simpli.DOMElement.extend("document", "parent", function() {
         return undefined;
@@ -739,6 +774,7 @@ var simpli;
      * Usage:
      * simpli({HTMLElement|document}).listenTo(...);
      *
+     * @function listenTo
      * @param {string} pType            a string representing the event type 
      *                                  to listen for
      * @param {function} pListener      the function to run when the event 
@@ -785,6 +821,7 @@ var simpli;
      * Add ready() method to document. It can listen to DOM content loaded 
      * event
      * 
+     * @function ready
      * @param {function} pListener      the function to run when the event 
      *                                  occurs
      * @return {object}                 this object
@@ -821,6 +858,7 @@ var simpli;
      * Add onClick() method to document and HTMLElement. It can bind an 
      * listener to the onClick event
      * 
+     * @function click
      * @param {function} pListener      the function to run when the event 
      *                                  occurs
      * @param {boolean} pUseCapture     whether the event should be executed 
@@ -875,11 +913,14 @@ var simpli;
      * Add prop() method to document and HTMLElement. It can get and set the
      * the attributes and properties of the simpli object
      * 
+     * @function prop
      * @param {string} pProp                the property name
      * @param {string|number} pValue        (Optional)the  new value for
      *                                      the property
      * @return {object|string|undefined}    this object for set, or string 
      *                                      or underfined for retrieval
+     * @memberof global.simpli
+     * @instance
      */
     global.simpli.DOMElement.extend(["HTMLElement", "document"], "prop", function(pProp, pValue) {
         if (!simpli.isType(pProp, simpli.STRING)) {
