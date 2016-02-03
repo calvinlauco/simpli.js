@@ -262,28 +262,6 @@ var simpli;
         };
     })();
 
-    (function() {
-        global.simpli.node = function() {
-            if (!(this instanceof simpli.node)) {
-                return new simpli.node();
-            }
-            this.left = null;
-            this.value = null;
-            this.right = null;
-            this.parent = null;
-        }
-        global.simpli.binarySearchTree = function() {
-            if (!(this instanceof simpli.binarySearchTree)) {
-                return new simpli.binarySearchTree();
-            }
-            this.mStruct = [];
-            this.mLast = 1;
-        }
-        global.simpli.binarySearchTree.prototype.toString = function() {
-            console.log(mStruct[this.id]);
-        }
-    })();
-
     simpli.STRING = "string";
     simpli.NUMBER = "number";
     simpli.BOOLEAN = "boolean";
