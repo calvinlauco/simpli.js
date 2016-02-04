@@ -35,6 +35,7 @@ Moreover, you can also have a look to the unit test in the folder ```unitTest/``
   
 ## History
 * 2 Feb, 2016. Version 1.0.3
+  * Update to version 1.0.3
   * Standardize simpli(...)
   * Add several simpli(...) method
   * Add simpli.exist()
