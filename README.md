@@ -34,6 +34,16 @@ Moreover, you can also have a look to the unit test in the folder ```unitTest/``
 * Google Chrome on iOS (latest)
   
 ## History
+* 2 Feb, 2016. Version 1.0.5
+  * Update to version 1.0.5 (1.0.4 skipped)
+  * Rename class to ucfirst name
+  * Add simpli.BinaryTreeNode
+  * Add simpli.BinaryTree
+  * Redesign simpli.istype to support typed array and object class
+  * Redesign simpli.getClassName()
+  * Redesign simpli.isObject()
+  * Add primitive type check functions
+  * Update unit test
 * 2 Feb, 2016. Version 1.0.3
   * Update to version 1.0.3
   * Standardize simpli(...)

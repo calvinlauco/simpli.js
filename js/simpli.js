@@ -6,7 +6,7 @@
  * Copyright (c) 2016 Lau Yu Hei
  * 
  * @author Lau Yu Hei
- * @version 1.0.3
+ * @version 1.0.5
  * @license The MIT License (MIT)
  * https://opensource.org/licenses/MIT
  **/
@@ -156,10 +156,10 @@ var simpli;
                     vObject = pSelector
                 }
             } else {
-                throw new Error("Invalid DOM object, it should be a DOM collection or an element")
+                throw new Error("Invalid DOM object, it should be a DOM collection or element")
             }
         } else {
-            throw new Error("Invalid selector, it should be a string or a DOM object");
+            throw new Error("Invalid selector, it should be a string or DOM object");
         }
 
         // simplify the object
@@ -175,107 +175,359 @@ var simpli;
     /**
      * simpli.queue is a simple queue structure
      *
-     * @class queue
+     * @class Queue
      * @memberof global.simpli
      */
     (function() {
-        global.simpli.queue = function() {
-            // make simpli.queue() new-Agnostic
-            if (!(this instanceof simpli.queue)) {
-                return new simpli.queue();
+        global.simpli.Queue = function() {
+            // make simpli.Queue() new-Agnostic
+            if (!(this instanceof simpli.Queue)) {
+                return new simpli.Queue();
             }
-            var vUid = this.uid = uid++;
-            this.mStruct = [];
-            this.mHead = 0;
-            this.mTail = 0;
+            this._struct = [];
+            this._head = 0;
+            this._tail = 0;
         };
-        global.simpli.queue.prototype.isEmpty = function() {
-            var vUid = this.uid;
-            return (this.mTail === this.mHead);
+        global.simpli.Queue.prototype.isEmpty = function() {
+            return (this._tail === this._head);
         };
-        global.simpli.queue.prototype.enqueue = function(element) {
+        global.simpli.Queue.prototype.enqueue = function(element) {
             if (!simpli.isset(element)) {
                 throw new Error("Missing element, it should be presented");
             }
-            var vUid = this.uid;
-            this.mStruct[this.mTail++] = element;
+            this._struct[this._tail++] = element;
         };
-        global.simpli.queue.prototype.dequeue = function() {
+        global.simpli.Queue.prototype.dequeue = function() {
             if (this.isEmpty()) {
                 return null;
             }
-            var vUid = this.uid;
-            var vResult = this.mStruct[this.mHead];
-            this.mStruct[this.mHead++] = null;
+            var vResult = this._struct[this._head];
+            this._struct[this._head++] = null;
             return vResult;
         };
-        global.simpli.queue.prototype.front = function() {
+        global.simpli.Queue.prototype.front = function() {
             if (this.isEmpty()) {
                 return null;
             }
-            var vUid = this.uid;
-            return this.mStruct[this.mHead];
+            return this._struct[this._head];
         };
+        global.simpli.Queue.prototype.toString = function() {
+            return "[object simpli.Queue]";
+        }
     })();
 
     /**
      * simpli.queue is a simple queue structure
      *
-     * @class stack
+     * @class Stack
      * @memberof global.simpli
      */
     (function() {
-        global.simpli.stack = function() {
-            if(!(this instanceof simpli.stack)) {
-                return new simpli.stack();
+        global.simpli.Stack = function() {
+            if(!(this instanceof simpli.Stack)) {
+                return new simpli.Stack();
             }
-            var vUid = this.uid = uid++;
-            this.mStruct = [];
-            this.mTop = 0;
+            this._struct = [];
+            this._top = 0;
         };
-        global.simpli.stack.prototype.isEmpty = function() {
-            var vUid = this.uid;
-            return (this.mTop === 0);
+        global.simpli.Stack.prototype.isEmpty = function() {
+            return (this._top === 0);
         };
-        global.simpli.stack.prototype.push = function(element) {
+        global.simpli.Stack.prototype.push = function(element) {
             if (!simpli.isset(element)) {
                 throw new Error("Missing element, it should be presented");
             }
-            var vUid = this.uid;
-            this.mStruct[++this.mTop] = element;
+            this._struct[++this._top] = element;
         };
-        global.simpli.stack.prototype.pop = function() {
+        global.simpli.Stack.prototype.pop = function() {
             if (this.isEmpty()) {
                 return null;
             }
-            var vUid = this.uid;
-            var vResult = this.mStruct[this.mTop];
-            this.mStruct[this.mTop--] = null;
+            var vResult = this._struct[this._top];
+            this._struct[this._top--] = null;
             return vResult;
         };
-        global.simpli.stack.prototype.top = function() {
+        global.simpli.Stack.prototype.top = function() {
             if (this.isEmpty()) {
                 return null;
             }
-            var vUid = this.uid;
-            return this.mStruct[this.mTop];
+            return this._struct[this._top];
+        };
+        global.simpli.Stack.prototype.toString = function() {
+            return "[object simpli.Stack]";
         };
     })();
 
-    simpli.STRING = "string";
-    simpli.NUMBER = "number";
-    simpli.BOOLEAN = "boolean";
-    simpli.BOOL = "boolean";
-    simpli.OBJECT = "object";
-    simpli.FUNCTION = "function";
-    simpli.INTEGER = "integer";
-    simpli.INT = "integer";
-    simpli.ARRAY = "array";
-    // IE backward compatibility
-    simpli.UNKNOWN = "unknown";
+    /**
+     * simpli.BinaryTreeNode is a node for binary tree
+     *
+     * @class BinaryTreeNode
+     * @memberof global.simpli
+     */
+    (function() {
+        /**
+         * @constrcutor
+         * @param {integer} pData   the value of the node
+         * @memberof global.simpli.BinaryTreeNode
+         */
+        global.simpli.BinaryTreeNode = function(pData) {
+            if (!(this instanceof simpli.BinaryTreeNode)) {
+                return new simpli.BinaryTreeNode(pData);
+            }
+            if (!simpli.isType(pData, simpli.INTEGER)) {
+                throw new Error("Invalid data, it should be an integer");
+            }
+            this._leftNode = null;
+            this._rightNode = null;
+            this._data = pData;
+        }
+        global.simpli.BinaryTreeNode.prototype.getData = function() {
+            return this._data;
+        };
+        global.simpli.BinaryTreeNode.prototype.getLeftNode = function() {
+            return this._leftNode;
+        };
+        global.simpli.BinaryTreeNode.prototype.hasLeftNode = function() {
+            return this._leftNode !== null;
+        };
+        global.simpli.BinaryTreeNode.prototype.setLeftNode = function(pData) {
+            if (!simpli.isType(pData, [simpli.INTEGER, {Object:"simpli.BinaryTreeNode"}])) {
+                throw new Error("Invalid node, it should be an integer or simpli.BinaryTreeNode");
+            }
+            var vNode;
+            if (simpli.isInteger(pData)) {
+                vNode = new simpli.BinaryTreeNode(pData);
+            } else if (simpli.isType(pData, simpli.OBJECT)) {
+                if (simpli.getClass(pData) !== "simpli.BinaryTreeNode") {
+                    throw new Error("Invalid node object, it should be a simpli.BinaryTreeNode object or null");
+                }
+                vNode = pData;
+            }
+            this._leftNode = vNode;
 
-    simpli.REQUIRED = true;
-    simpli.OPTIONAL = false;
+            return this;
+        };
+        global.simpli.BinaryTreeNode.prototype.getRightNode = function() {
+            return this._rightNode;
+        };
+        global.simpli.BinaryTreeNode.prototype.hasRightNode = function() {
+            return this._rightNode !== null;
+        };
+        global.simpli.BinaryTreeNode.prototype.setRightNode = function(pData) {
+            if (!simpli.isType(pData, [simpli.INTEGER, {Object:"simpli.BinaryTreeNode"}])) {
+                throw new Error("Invalid node, it should be an integer or simpli.BinaryTreeNode");
+            }
+
+            var vNode;
+            if (simpli.isInteger(pData)) {
+                vNode = new simpli.BinaryTreeNode(pData);
+            } else if (simpli.isType(pData, simpli.OBJECT)) {
+                vNode = pData;
+            }
+            this._rightNode = vNode;
+
+            return this;
+        };
+        global.simpli.BinaryTreeNode.prototype.toString = function() {
+            return "[object simpli.BinaryTreeNode]";
+        };
+    })();
+
+    /**
+     * simpli.BinaryTreeNode is a node for binary tree
+     *
+     * @class BinaryTree
+     * @memberof global.simpli
+     */
+    (function() {
+        /**
+         * @constrcutor
+         * @param {integer|simpli.BinaryTreeNode|simpli.BinaryTree} pInitData   (Optional)the initial data for the 
+         *                                                                      binary tree. It can either be an 
+                                                                                integer data or a node as root, or a 
+                                                                                binary tree representation
+         * @memberof global.simpli.BinaryTreeNode
+         */
+        global.simpli.BinaryTree = function(pInitData) {
+            if (!simpli.isType(pInitData, [simpli.INTEGER, 
+                {Object: "simpli.BinaryTreeNode"}, 
+                {Object: "simpli.BinaryTree"}], simpli.OPTIONAL)) {
+                throw new Error("Invalid initialization data, it should be an integer, simpli.BinaryTreeNode, simpli.BinaryTree or simpli.BinaryTreeTraversal");
+            }
+            if (!simpli.isset(pInitData)){
+                this._root = null;
+                this._size = 0;
+            } else if (simpli.isInteger(pInitData)) {
+                this._root = new simpli.BinaryTreeNode(pInitData);
+                this._size = 1;
+            } else if (simpli.isObject(pInitData)) {
+                var vClass = simpli.getClass(pInitData);
+                if (vClass === "simpli.BinaryTreeNode") {
+                    this._root = pInitData;
+                } else if (vClass === "simpli.BinaryTree") {
+                    this._root = pInitData.getRoot();
+                }
+                this._size = 0;
+                /*
+                 * root now contains a well-formed BinaryTree and share 
+                 * the same size calculation routine
+                 */
+                var vStack = new simpli.Stack();
+                var vElem;
+                vStack.push(this.getRoot());
+                while(!vStack.isEmpty()) {
+                    vElem = vStack.pop();
+                    this._size++;
+                    if (vElem.hasLeftNode()) {
+                        vStack.push(vElem.getLeftNode());
+                    }
+                    if (vElem.hasRightNode()) {
+                        vStack.push(vElem.getRightNode());
+                    }
+                }
+            }
+        };
+        global.simpli.BinaryTree.prototype.insert = function(pNode) {
+            if (!simpli.isType(pNode, [simpli.INTEGER, {Object:"simpli.BinaryTreeNode"}])) {
+                throw new Error("Invalid node, is should be a simpli.BinaryTreeNode");
+            }
+
+            var vNode;
+            if (simpli.isInteger(pNode)) {
+                vNode = new simpli.BinaryTreeNode(pNode);
+            } else {
+                vNode = pNode;
+            }
+
+            // fill the noe to the upper-most position possible
+            var vQueue = new simpli.Queue();
+            vQueue.enqueue(this.getRoot());
+            var vElem;
+            while(!vQueue.isEmpty()) {
+                vElem = vQueue.dequeue();
+                if (vElem.hasLeftNode()) {
+                    vQueue.enqueue(vElem.getLeftNode());
+                } else {
+                    vElem.setLeftNode(vNode);
+                    break;
+                }
+                if (vElem.hasRightNode()) {
+                    vQueue.enqueue(vElem.getRightNode());
+                } else {
+                    vElem.setRightNode(vNode);
+                    break;
+                }
+            }
+            this._size++;
+            return this;
+        };
+        global.simpli.BinaryTree.prototype.getSize = function() {
+            return this._size;
+        }
+        global.simpli.BinaryTree.prototype.getHeight = function() {
+            return Math.log2(this.getSize());
+        }
+        global.simpli.BinaryTree.prototype.getRoot = function() {
+            return this._root;
+        }
+        global.simpli.BinaryTree.prototype.setRoot = function(pNode) {
+            if (simpli.exist(pNode) && simpli.getClass(pNode) !== "simpliBinaryTreeNode") {
+                throw new Error("Invalid node, it should be a simpli.BinaryTreeNode object or null");
+            }
+            this._root = pNode;
+        }
+        global.simpli.BinaryTree.prototype.preOrder = function() {
+            var vResult = [];
+            var vStack = new simpli.Stack();
+            vStack.push(this.getRoot());
+            var vElem;
+            while(!vStack.isEmpty()){
+                vElem = vStack.pop();
+                vResult.push(vElem.getData());
+                if (vElem.hasRightNode()) {
+                    vStack.push(vElem.getRightNode());
+                }
+                if (vElem.hasLeftNode()) {
+                    vStack.push(vElem.getLeftNode());
+                }
+            }
+
+            return vResult;
+        };
+        var inOrderTraversal = function(pNode, pResult) {
+            if (pNode.hasLeftNode()) {
+                inOrderTraversal(pNode.getLeftNode(), pResult);
+            }
+            pResult.push(pNode.getData());
+            if (pNode.hasRightNode()) {
+                inOrderTraversal(pNode.getRightNode(), pResult);
+            }
+        }
+        global.simpli.BinaryTree.prototype.inOrder = function() {
+            var vResult = [];
+            inOrderTraversal(this.getRoot(), vResult);
+            return vResult;
+        };
+        // TODO:
+        global.simpli.BinaryTree.prototype.postOrder = function() {
+        };
+        // TODO:
+        global.simpli.BinaryTree.prototype.levelOrder = function() {
+        };
+        global.simpli.BinaryTree.prototype.toString = function() {
+            return "[object simpli.BinaryTree]";
+        };
+    })();
+
+    (function() {
+        var binarySearch = function(pArray, pTarget, pBegin, pEnd) {
+            if (pEnd-pBegin <= 0) {
+                return (pArray[pBegin] === pTarget);
+            }
+            var vMid = pBegin+Math.floor((pEnd-pBegin)/2);
+            var vMidValue = pArray[vMid];
+            if (pTarget < vMidValue) {
+                return binarySearch(pArray, pTarget, pBegin, vMid-1);
+            } else if (pTarget > vMidValue) {
+                return binarySearch(pArray, pTarget, vMid+1, pEnd);
+            } else {
+                // result found
+                return true;
+            }
+        }
+        /**
+         * Perform a binary search on a sorted array to find for the target value
+         * 
+         * @param {integer[]} pArray    the sorted array
+         * @param {integer}pTarget      specific the target value
+         * @return {boolean}            whether the target exists in the array
+         * @memberof global.simpli
+         */
+        global.simpli.binarySearch = function(pArray, pTarget) {
+            if (!simpli.isType(pArray, {Array:simpli.INTEGER})) {
+                throw new Error("Invalid array, it should be an integer array");
+            }
+            if (!simpli.isType(pTarget, simpli.INTEGER)) {
+                throw new Error("Invalid target, it should be an integer");
+            }
+            return binarySearch(pArray, pTarget, 0, pArray.length);
+        }
+    })();
+
+    global.simpli.STRING = "String";
+    global.simpli.NUMBER = "Number";
+    global.simpli.BOOLEAN = "Boolean";
+    global.simpli.BOOL = "Boolean";
+    global.simpli.OBJECT = "Object";
+    global.simpli.FUNCTION = "Function";
+    global.simpli.INTEGER = "Integer";
+    global.simpli.INT = "Integer";
+    global.simpli.ARRAY = "Array";
+    // IE backward compatibility
+    global.simpli.UNKNOWN = "unknown";
+
+    global.simpli.REQUIRED = true;
+    global.simpli.OPTIONAL = false;
 
     /**
      * Get the class name of a variable
@@ -290,6 +542,17 @@ var simpli;
         // compare to both global and IE11 window under non-strict mode
         if (pVar === global || pVar === _IE11Window) {
             return "Global";
+        }
+        var vClass = varString.slice(8, -1);
+        if (vClass === "Object") {
+            /* 
+             * Object is rather meaningless, try to examine the toString() of 
+             * the variable to find [object ...] pattern
+             */
+            var vMatch = pVar.toString().match(/^\[object\s([^\]]+)\]$/);
+            if (vMatch !== null && vMatch.length === 2) {
+                return vMatch[1];
+            }
         }
         return varString.slice(8, -1);
     };
@@ -347,7 +610,7 @@ var simpli;
         for (var i=1; i<l; i++) {
             var vArg = arguments[i];
             if (!simpli.isType(vArg, [simpli.STRING, simpli.INTEGER])) {
-                throw new Error("Invalid key, it should be a string or an integer");
+                throw new Error("Invalid key, it should be a string or integer");
             }
 
             if (typeof vObject[vArg] === "undefined") {
@@ -417,6 +680,76 @@ var simpli;
         return true;
     }
 
+
+    /**
+     * Check if a variable is a string
+     *
+     * @param {mixed} pVar  variable to check against
+     * @return {boolean}    whether the variable is a string
+     * @memberof global.simpli
+     */
+    global.simpli.isString = function(pVar) {
+        return (typeof pVar === "string");
+    };
+
+    /**
+     * Check if a variable is a number
+     *
+     * @param {mixed} pVar  variable to check against
+     * @return {boolean}    whether the variable is a number
+     * @memberof global.simpli
+     */
+    global.simpli.isNumber = function(pVar) {
+        return (typeof pVar === "number");
+    };
+
+    /**
+     * Check if a variable is a boolean
+     *
+     * @param {mixed} pVar  variable to check against
+     * @return {boolean}    whether the variable is a boolean
+     * @memberof global.simpli
+     */
+    global.simpli.isBoolean = function(pVar) {
+        return (typeof pVar === "boolean");
+    };
+
+    /**
+     * Check if a variable is an object of specific class
+     *
+     * @param {mixed} pVar              variable to check against
+     * @param {string|object} pClass    (Optional) specific the class to check 
+     *                                  the variable against. If string is 
+     *                                  provided, the toString() of the pVar 
+     *                                  will be used to determine the class; If
+     *                                  object is provided, instanceof pClass
+     *                                  will be used to instead
+     * @return {boolean}                whether the variable is an object
+     * @memberof global.simpli
+     */
+    global.simpli.isObject = function(pVar, pClass) {
+        if (typeof pClass === "undefined") {
+            return (typeof pVar === "object");
+        } else if (typeof pClass === "string") {
+            return (simpli.getClass(pVar) === pClass);
+        } else if (typeof pClass === "object") {
+            return (pVar instanceof pClass)
+        } else {
+            throw new Error("Invalid class, it should be a string or class object");
+        }
+    };
+
+    /**
+     * Check if a variable is a function
+     *
+     * @param {mixed} pVar  variable to check against
+     * @return {boolean}    whether the variable is a function
+     * @memberof global.simpli
+     */
+    global.simpli.isFunction = function(pVar) {
+        return (typeof pVar === "function");
+    };
+
     /**
      * Check if a variable is an array
      *
@@ -450,13 +783,13 @@ var simpli;
      * If it is an argument check, required flag can be required or
      * optional to indicate whether the argument must be presented
      *
-     * @param {mixed} pArg                  the argument to check against
-     * @param {string|string[]} pType       expected type of the arugment
-     * @param {boolean} pRequired           (Optional) whether the 
-     *                                      arguement is required, default
-     *                                      is true
-     * @return {boolean}                    whether the arugment matches 
-     *                                      the type
+     * @param {mixed} pVar                      the argument to check against
+     * @param {string|string[]|object} pType    expected type of the arugment
+     * @param {boolean} pRequired               (Optional) whether the 
+     *                                          arguement is required, 
+     *                                          defaultis true
+     * @return {boolean}                        whether the arugment matches 
+     *                                          the type
      * @memberof global.simpli
      */
     global.simpli.isType = function(pVar, pType, pRequired) {
@@ -472,14 +805,15 @@ var simpli;
          * If the argument is optional, return true if the arugment is not
          * defined
          */
-        if (!vRequired && (typeof pArg === "undefined" || pArg === null)) {
+        if (!vRequired && (typeof pVar === "undefined" || pVar === null)) {
             return true;
         }
 
         var vTypeIsArray = simpli.isArray(pType), 
-            vValid = false;
-        if (typeof pType !== "string" && !vTypeIsArray) {
-            throw new Error("Invalid type, it should be a string or array of string");
+            vTypeIsObject = simpli.isObject(pType);
+        if (typeof pType !== "string" && !vTypeIsArray && !vTypeIsObject) {
+            console.log(pType);
+            throw new Error("Invalid type, it should be a string, object or an array of them");
         }
 
         if (vTypeIsArray) {
@@ -494,19 +828,53 @@ var simpli;
                 }
                 i++;
             }
+        } else if (vTypeIsObject) {
+            // check for typed array
+            if (simpli.exist(pType[simpli.ARRAY])) {
+                var vType = pType[simpli.ARRAY];
+                if (simpli.isArray(pVar)) {
+                    // check if all elements in the array are of the type
+                    for(var i=0, l=pVar.length; i<l; i++) {
+                        if (!simpli.isType(pVar[i], vType)) {
+                            /* 
+                             * return false whenever there is one element 
+                             * of different type
+                             */
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            // check for specific object class
+            } else if (simpli.exist(pType[simpli.OBJECT])) {
+                return (simpli.isObject(pVar, pType[simpli.OBJECT]));
+            } else {
+                throw new Error("Unrecognized type object, it should be specificing a typed array or object class");
+            }
         } else {
+            // string type
             switch(pType) {
-                case "string": 
-                case "number": 
-                case "boolean":  
-                case "object": 
-                case "function": 
-                    return (typeof pVar === pType);
+                case simpli.STRING: 
+                    return (typeof pVar === "string");
                     break;
-                case "integer": 
+                case simpli.NUMBER: 
+                    return (typeof pVar === "number");
+                    break;
+                case simpli.BOOLEAN: 
+                case simpli.BOOL: 
+                    return (typeof pVar === "boolean");
+                    break;
+                case simpli.OBJECT: 
+                    return (typeof pVar === "object");
+                    break;
+                case simpli.FUNCTION: 
+                    return (typeof pVar === "function");
+                    break;
+                case simpli.INTEGER: 
+                case simpli.INT: 
                     return simpli.isInteger(pVar);
                     break;
-                case "array": 
+                case simpli.ARRAY: 
                     return simpli.isArray(pVar);
                     break;
                 default:
@@ -515,6 +883,19 @@ var simpli;
         }
         return false;
     };
+
+    /**
+     * Uppercase the first character of a string
+     * 
+     * @param {string} pString  the string to be uppercased first
+     * @return {string}         the string with first character uppercased
+     */
+    global.simpli.ucfirst = function(pString) {
+        if (!simpli.isType(pString, simpli.STRING)) {
+            throw new Error("Invalid argument, it should be a string");
+        }
+        return pString.charAt(0).toUpperCase() + pString.slice(1);
+    }
 
     // DOM manipulation
     /**
@@ -586,8 +967,8 @@ var simpli;
          * @memberof global.simpli.DOMElement
          */
         extend: function(pElement, pName, pFunction, pType) {
-            if (!simpli.isType(pElement, [simpli.STRING, simpli.ARRAY])) {
-                throw new Error("Invalid element, it should be a string");
+            if (!simpli.isType(pElement, [simpli.STRING, {Array:simpli.STRING}])) {
+                throw new Error("Invalid element, it should be a string or array of string");
             }
             if (simpli.isArray(pElement)) {
                 for (var i=0, l=pElement.length; i<l; i++) {
@@ -1049,7 +1430,7 @@ var simpli;
      * @instance
      */
     global.simpli.DOMElement.extend("HTMLElement", "css", function(pStyle, pValue) {
-        if (!simpli.isType(pStyle, [simpli.STRING, simpli.ARRAY])) {
+        if (!simpli.isType(pStyle, [simpli.STRING, {Array:simpli.STRING}])) {
             throw new Error("Invalid style, it should be a string or array of string");
         }
         if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
@@ -1114,7 +1495,7 @@ var simpli;
      * @instance
      */
     global.simpli.DOMElement.extend("HTMLElement", "removeCss", function(pStyle) {
-        if (!simpli.isType(pStyle, [simpli.STRING, simpli.ARRAY])) {
+        if (!simpli.isType(pStyle, [simpli.STRING, {Array:simpli.STRING}])) {
             throw new Error("Invalid style, it should be a string or array of string");
         }
         if (simpli.isArray(pStyle)) {
