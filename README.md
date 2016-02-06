@@ -39,6 +39,7 @@ Moreover, you can also have a look to the unit test in the folder ```unitTest/``
   * Rename class to ucfirst name
   * Add simpli.BinaryTreeNode
   * Add simpli.BinaryTree
+  * Add simpli.binarySearch()
   * Redesign simpli.istype to support typed array and object class
   * Redesign simpli.getClassName()
   * Redesign simpli.isObject()
