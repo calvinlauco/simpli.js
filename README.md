@@ -34,7 +34,7 @@ Moreover, you can also have a look to the unit test in the folder ```unitTest/``
 * Google Chrome on iOS (latest)
   
 ## History
-* 2 Feb, 2016. Version 1.0.5
+* 7 Feb, 2016. Version 1.0.5
   * Update to version 1.0.5 (1.0.4 skipped)
   * Rename class to ucfirst name
   * Add simpli.BinaryTreeNode
