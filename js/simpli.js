@@ -6,7 +6,7 @@
  * Copyright (c) 2016 Lau Yu Hei
  * 
  * @author Lau Yu Hei
- * @version 1.0.5
+ * @version 1.0.6
  * @license The MIT License (MIT)
  * https://opensource.org/licenses/MIT
  **/
@@ -45,13 +45,21 @@ if (typeof document.querySelector === "undefined") {
         return (elements.length) ? elements[0] : null;
     };
 }
-
 // Document.getElementsByClassName method
 // Needed for: IE8-
 if (typeof document.getElementsByClassName === "undefined") {
     document.getElementsByClassName = function(classNames) {
         classNames = String(classNames).replace(/^|\s+/g, '.');
         return document.querySelectorAll(classNames);
+    };
+}
+// Document.getElementsByClassName method
+// Needed for: IE8-
+if (typeof Object.create === "undefined") {
+    Object.create = function(prototype) {
+        function C() {}
+        C.prototype = prototype;
+        return new C();
     };
 }
 
@@ -76,37 +84,31 @@ var simpli;
     /**
      * Simplify an object by adding additional functions
      */
-    var simplify = function(vObject) {
-        // distinguish between HTMLCollection|Array and HTMLElement
-        if (typeof vObject.length === "undefined") {
-            // single HTMLElement
-            // append simpli structure
-            vObject._simpli = {
-            };
-            vObject.toString = function() {
+    var simplify = function(pObject) {
+        /*
+         * Since a HTMLCollection may contain different types of HTML 
+         * elements, it is impossible to simplify the collection using any
+         * of the element type other than HTMLElement
+         */
+        if (pObject.length == 1) {
+            // single element
+            if (pObject.nodeType === simpli.nodeType.DOCUMENT) {
+                 _DOMCollection.simplify("document", pObject, _DOMCollection.ELEMENT);
+            } else {
+                 _DOMCollection.simplify("HTMLElement", pObject, _DOMCollection.ELEMENT);
+                _DOMCollection.simplify(pObject[0].nodeName, pObject, _DOMCollection.ELEMENT);
+            }
+            pObject.toString = function() {
                 return "[object simpliElement]";
             }
-
-            if (vObject.nodeType === 9) {
-                // the DOM object is an HTMLElement or a document
-                global.simpli.DOMElement.simplify("document", vObject, simpli.DOMElement.ELEMENT);
-            } else {
-                global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.ELEMENT);
-                global.simpli.DOMElement.simplify(vObject.nodeName, vObject, simpli.DOMElement.ELEMENT);
-            }
         } else {
-            vObject.toString = function() {
+            _DOMCollection.simplify("HTMLElement", pObject, _DOMCollection.COLLECTION);
+            pObject.toString = function() {
                 return "[object simpliCollection]";
             }
-            global.simpli.DOMElement.simplify("HTMLElement", vObject, simpli.DOMElement.COLLECTION);
-            global.simpli.DOMElement.simplify("HTMLCollection", vObject, simpli.DOMElement.ELEMENT);
-            vObject.forEach(function(currentElement, index, array) {
-                // simplify each element in a collection
-                vObject[index] = simplify(currentElement);
-            });
         }
 
-        return vObject;
+        return pObject;
     }
 
     /**
@@ -126,17 +128,18 @@ var simpli;
      * the behaviour of your program.
      *
      * @function simpli
-     * @param {(string|object)} pSelector   selector string or a DOM object
+     * @param {string|object} pSelector   selector string or a DOM object
      * @return {object}                     the simpli DOM object
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli = function(pSelector) {
+    simpli = function(pSelector) {
         var vObject;
         if (simpli.isType(pSelector, simpli.STRING)) {
+            // CSS selector string
             try {
                 vObject = document.querySelectorAll(pSelector);
             }catch(e) {
-                throw new Error("Invalid selector, it should be a valid CSS selector");
+                throw new TypeError("Invalid selector, it should be a valid CSS selector");
             }
         } else if (simpli.isType(pSelector, simpli.OBJECT)) {
             if (simpli.getClass(pSelector) === "HTMLCollection" || simpli.isArray(pSelector)) {
@@ -144,22 +147,23 @@ var simpli;
                 vObject = pSelector;
             } else if (typeof pSelector.nodeType !== "undefined") {
                 // single element
-                if (pSelector.nodeType === 1) {
+                if (pSelector.nodeType === simpli.nodeType.ELEMENT) {
                     // condition for HTMLElement node
                     /*
                      * user provide with a HTMLElement, wrap it in an Array to 
-                     * pretend to be result of querySelectorAll()
+                     * make the objec consistent with result of 
+                     * document.querySelectorAll()
                      */
                     vObject = [pSelector];
-                } else if (pSelector.nodeType === 9) {
+                } else if (pSelector.nodeType === simpli.nodeType.DOCUMENT) {
                     // condition for document node
                     vObject = pSelector
                 }
             } else {
-                throw new Error("Invalid DOM object, it should be a DOM collection or element")
+                throw new TypeError("Invalid DOM object, it should be a DOM collection or element")
             }
         } else {
-            throw new Error("Invalid selector, it should be a string or DOM object");
+            throw new TypeError("Invalid selector, it should be a string or DOM object");
         }
 
         // simplify the object
@@ -167,8 +171,16 @@ var simpli;
         
         return vObject;
     };
-    global.simpli.prototype.toString = function() {
+    simpli.prototype.toString = function() {
         return "[object simpli]";
+    };
+
+    simpli.nodeType = {
+        ELEMENT: 1, 
+        TEXT: 3,
+        COMMENT: 8, 
+        DOCUMENT: 9, 
+        DOCUMENT_TYPE: 10 
     };
 
     // data structure
@@ -176,10 +188,10 @@ var simpli;
      * simpli.queue is a simple queue structure
      *
      * @class Queue
-     * @memberof global.simpli
+     * @memberof simpli
      */
     (function() {
-        global.simpli.Queue = function() {
+        simpli.Queue = function() {
             // make simpli.Queue() new-Agnostic
             if (!(this instanceof simpli.Queue)) {
                 return new simpli.Queue();
@@ -188,16 +200,16 @@ var simpli;
             this._head = 0;
             this._tail = 0;
         };
-        global.simpli.Queue.prototype.isEmpty = function() {
+        simpli.Queue.prototype.isEmpty = function() {
             return (this._tail === this._head);
         };
-        global.simpli.Queue.prototype.enqueue = function(element) {
+        simpli.Queue.prototype.enqueue = function(element) {
             if (!simpli.isset(element)) {
-                throw new Error("Missing element, it should be presented");
+                throw new TypeError("Missing element, it should be presented");
             }
             this._struct[this._tail++] = element;
         };
-        global.simpli.Queue.prototype.dequeue = function() {
+        simpli.Queue.prototype.dequeue = function() {
             if (this.isEmpty()) {
                 return null;
             }
@@ -205,13 +217,13 @@ var simpli;
             this._struct[this._head++] = null;
             return vResult;
         };
-        global.simpli.Queue.prototype.front = function() {
+        simpli.Queue.prototype.front = function() {
             if (this.isEmpty()) {
                 return null;
             }
             return this._struct[this._head];
         };
-        global.simpli.Queue.prototype.toString = function() {
+        simpli.Queue.prototype.toString = function() {
             return "[object simpli.Queue]";
         }
     })();
@@ -220,26 +232,26 @@ var simpli;
      * simpli.queue is a simple queue structure
      *
      * @class Stack
-     * @memberof global.simpli
+     * @memberof simpli
      */
     (function() {
-        global.simpli.Stack = function() {
+        simpli.Stack = function() {
             if(!(this instanceof simpli.Stack)) {
                 return new simpli.Stack();
             }
             this._struct = [];
             this._top = 0;
         };
-        global.simpli.Stack.prototype.isEmpty = function() {
+        simpli.Stack.prototype.isEmpty = function() {
             return (this._top === 0);
         };
-        global.simpli.Stack.prototype.push = function(element) {
+        simpli.Stack.prototype.push = function(element) {
             if (!simpli.isset(element)) {
-                throw new Error("Missing element, it should be presented");
+                throw new TypeError("Missing element, it should be presented");
             }
             this._struct[++this._top] = element;
         };
-        global.simpli.Stack.prototype.pop = function() {
+        simpli.Stack.prototype.pop = function() {
             if (this.isEmpty()) {
                 return null;
             }
@@ -247,13 +259,13 @@ var simpli;
             this._struct[this._top--] = null;
             return vResult;
         };
-        global.simpli.Stack.prototype.top = function() {
+        simpli.Stack.prototype.top = function() {
             if (this.isEmpty()) {
                 return null;
             }
             return this._struct[this._top];
         };
-        global.simpli.Stack.prototype.toString = function() {
+        simpli.Stack.prototype.toString = function() {
             return "[object simpli.Stack]";
         };
     })();
@@ -262,44 +274,44 @@ var simpli;
      * simpli.BinaryTreeNode is a node for binary tree
      *
      * @class BinaryTreeNode
-     * @memberof global.simpli
+     * @memberof simpli
      */
     (function() {
         /**
          * @constrcutor
          * @param {integer} pData   the value of the node
-         * @memberof global.simpli.BinaryTreeNode
+         * @memberof simpli.BinaryTreeNode
          */
-        global.simpli.BinaryTreeNode = function(pData) {
+        simpli.BinaryTreeNode = function(pData) {
             if (!(this instanceof simpli.BinaryTreeNode)) {
                 return new simpli.BinaryTreeNode(pData);
             }
             if (!simpli.isType(pData, simpli.INTEGER)) {
-                throw new Error("Invalid data, it should be an integer");
+                throw new TypeError("Invalid data, it should be an integer");
             }
             this._leftNode = null;
             this._rightNode = null;
             this._data = pData;
         }
-        global.simpli.BinaryTreeNode.prototype.getData = function() {
+        simpli.BinaryTreeNode.prototype.getData = function() {
             return this._data;
         };
-        global.simpli.BinaryTreeNode.prototype.getLeftNode = function() {
+        simpli.BinaryTreeNode.prototype.getLeftNode = function() {
             return this._leftNode;
         };
-        global.simpli.BinaryTreeNode.prototype.hasLeftNode = function() {
+        simpli.BinaryTreeNode.prototype.hasLeftNode = function() {
             return this._leftNode !== null;
         };
-        global.simpli.BinaryTreeNode.prototype.setLeftNode = function(pData) {
+        simpli.BinaryTreeNode.prototype.setLeftNode = function(pData) {
             if (!simpli.isType(pData, [simpli.INTEGER, {Object:"simpli.BinaryTreeNode"}])) {
-                throw new Error("Invalid node, it should be an integer or simpli.BinaryTreeNode");
+                throw new TypeError("Invalid node, it should be an integer or simpli.BinaryTreeNode");
             }
             var vNode;
             if (simpli.isInteger(pData)) {
                 vNode = new simpli.BinaryTreeNode(pData);
             } else if (simpli.isType(pData, simpli.OBJECT)) {
                 if (simpli.getClass(pData) !== "simpli.BinaryTreeNode") {
-                    throw new Error("Invalid node object, it should be a simpli.BinaryTreeNode object or null");
+                    throw new TypeError("Invalid node object, it should be a simpli.BinaryTreeNode object or null");
                 }
                 vNode = pData;
             }
@@ -307,15 +319,15 @@ var simpli;
 
             return this;
         };
-        global.simpli.BinaryTreeNode.prototype.getRightNode = function() {
+        simpli.BinaryTreeNode.prototype.getRightNode = function() {
             return this._rightNode;
         };
-        global.simpli.BinaryTreeNode.prototype.hasRightNode = function() {
+        simpli.BinaryTreeNode.prototype.hasRightNode = function() {
             return this._rightNode !== null;
         };
-        global.simpli.BinaryTreeNode.prototype.setRightNode = function(pData) {
+        simpli.BinaryTreeNode.prototype.setRightNode = function(pData) {
             if (!simpli.isType(pData, [simpli.INTEGER, {Object:"simpli.BinaryTreeNode"}])) {
-                throw new Error("Invalid node, it should be an integer or simpli.BinaryTreeNode");
+                throw new TypeError("Invalid node, it should be an integer or simpli.BinaryTreeNode");
             }
 
             var vNode;
@@ -328,7 +340,7 @@ var simpli;
 
             return this;
         };
-        global.simpli.BinaryTreeNode.prototype.toString = function() {
+        simpli.BinaryTreeNode.prototype.toString = function() {
             return "[object simpli.BinaryTreeNode]";
         };
     })();
@@ -337,7 +349,7 @@ var simpli;
      * simpli.BinaryTreeNode is a node for binary tree
      *
      * @class BinaryTree
-     * @memberof global.simpli
+     * @memberof simpli
      */
     (function() {
         /**
@@ -346,13 +358,13 @@ var simpli;
          *                                                                      binary tree. It can either be an 
                                                                                 integer data or a node as root, or a 
                                                                                 binary tree representation
-         * @memberof global.simpli.BinaryTreeNode
+         * @memberof simpli.BinaryTreeNode
          */
-        global.simpli.BinaryTree = function(pInitData) {
+        simpli.BinaryTree = function(pInitData) {
             if (!simpli.isType(pInitData, [simpli.INTEGER, 
                 {Object: "simpli.BinaryTreeNode"}, 
                 {Object: "simpli.BinaryTree"}], simpli.OPTIONAL)) {
-                throw new Error("Invalid initialization data, it should be an integer, simpli.BinaryTreeNode, simpli.BinaryTree or simpli.BinaryTreeTraversal");
+                throw new TypeError("Invalid initialization data, it should be an integer, simpli.BinaryTreeNode, simpli.BinaryTree or simpli.BinaryTreeTraversal");
             }
             if (!simpli.isset(pInitData)){
                 this._root = null;
@@ -387,9 +399,9 @@ var simpli;
                 }
             }
         };
-        global.simpli.BinaryTree.prototype.insert = function(pNode) {
+        simpli.BinaryTree.prototype.insert = function(pNode) {
             if (!simpli.isType(pNode, [simpli.INTEGER, {Object:"simpli.BinaryTreeNode"}])) {
-                throw new Error("Invalid node, is should be a simpli.BinaryTreeNode");
+                throw new TypeError("Invalid node, is should be a simpli.BinaryTreeNode");
             }
 
             var vNode;
@@ -421,22 +433,22 @@ var simpli;
             this._size++;
             return this;
         };
-        global.simpli.BinaryTree.prototype.getSize = function() {
+        simpli.BinaryTree.prototype.getSize = function() {
             return this._size;
         }
-        global.simpli.BinaryTree.prototype.getHeight = function() {
+        simpli.BinaryTree.prototype.getHeight = function() {
             return Math.log2(this.getSize());
         }
-        global.simpli.BinaryTree.prototype.getRoot = function() {
+        simpli.BinaryTree.prototype.getRoot = function() {
             return this._root;
         }
-        global.simpli.BinaryTree.prototype.setRoot = function(pNode) {
+        simpli.BinaryTree.prototype.setRoot = function(pNode) {
             if (simpli.exist(pNode) && simpli.getClass(pNode) !== "simpliBinaryTreeNode") {
-                throw new Error("Invalid node, it should be a simpli.BinaryTreeNode object or null");
+                throw new TypeError("Invalid node, it should be a simpli.BinaryTreeNode object or null");
             }
             this._root = pNode;
         }
-        global.simpli.BinaryTree.prototype.preOrder = function() {
+        simpli.BinaryTree.prototype.preOrder = function() {
             var vResult = [];
             var vStack = new simpli.Stack();
             vStack.push(this.getRoot());
@@ -463,33 +475,57 @@ var simpli;
                 inOrderTraversal(pNode.getRightNode(), pResult);
             }
         }
-        global.simpli.BinaryTree.prototype.inOrder = function() {
+        simpli.BinaryTree.prototype.inOrder = function() {
             var vResult = [];
             inOrderTraversal(this.getRoot(), vResult);
             return vResult;
         };
-        // TODO:
-        global.simpli.BinaryTree.prototype.postOrder = function() {
+        var postOrderTraversal = function(pNode, pResult) {
+            if (pNode.hasLeftNode()) {
+                postOrderTraversal(pNode.getLeftNode(), pResult);
+            }
+            if (pNode.hasRightNode()) {
+                postOrderTraversal(pNode.getRightNode(), pResult);
+            }
+            pResult.push(pNode);
+        }
+        simpli.BinaryTree.prototype.postOrder = function() {
+            // TODO:
         };
-        // TODO:
-        global.simpli.BinaryTree.prototype.levelOrder = function() {
+        simpli.BinaryTree.prototype.levelOrder = function() {
+            var vResult = [];
+            var vQueue = new simpli.Queue();
+            vQueue.push(this.getRoot());
+            var vElem;
+            while(!vQueue.isEmpty()) {
+                vElem = vQueue.dequeue();
+                vResult.push(vElem);
+                if (vElem.hasLeftNode()) {
+                    vQueue.enqueue(vElem.getLeftNode());
+                }
+                if (vElem.hasRightNode()) {
+                    vQueue.enqueue(vElem.getRightNode());
+                }
+            }
+
+            return vResult;
         };
-        global.simpli.BinaryTree.prototype.toString = function() {
+        simpli.BinaryTree.prototype.toString = function() {
             return "[object simpli.BinaryTree]";
         };
     })();
 
     (function() {
-        var binarySearch = function(pArray, pTarget, pBegin, pEnd) {
-            if (pEnd-pBegin <= 0) {
-                return (pArray[pBegin] === pTarget);
+        var _binarySearch = function(pArray, pTarget, pBegin, pEnd) {
+            if (pEnd-pBegin < 0) {
+                return false;
             }
             var vMid = pBegin+Math.floor((pEnd-pBegin)/2);
             var vMidValue = pArray[vMid];
             if (pTarget < vMidValue) {
-                return binarySearch(pArray, pTarget, pBegin, vMid-1);
+                return _binarySearch(pArray, pTarget, pBegin, vMid-1);
             } else if (pTarget > vMidValue) {
-                return binarySearch(pArray, pTarget, vMid+1, pEnd);
+                return _binarySearch(pArray, pTarget, vMid+1, pEnd);
             } else {
                 // result found
                 return true;
@@ -501,42 +537,42 @@ var simpli;
          * @param {integer[]} pArray    the sorted array
          * @param {integer}pTarget      specific the target value
          * @return {boolean}            whether the target exists in the array
-         * @memberof global.simpli
+         * @memberof simpli
          */
-        global.simpli.binarySearch = function(pArray, pTarget) {
+        simpli.binarySearch = function(pArray, pTarget) {
             if (!simpli.isType(pArray, {Array:simpli.INTEGER})) {
-                throw new Error("Invalid array, it should be an integer array");
+                throw new TypeError("Invalid array, it should be an integer array");
             }
             if (!simpli.isType(pTarget, simpli.INTEGER)) {
-                throw new Error("Invalid target, it should be an integer");
+                throw new TypeError("Invalid target, it should be an integer");
             }
-            return binarySearch(pArray, pTarget, 0, pArray.length);
+            return _binarySearch(pArray, pTarget, 0, pArray.length);
         }
     })();
 
-    global.simpli.STRING = "String";
-    global.simpli.NUMBER = "Number";
-    global.simpli.BOOLEAN = "Boolean";
-    global.simpli.BOOL = "Boolean";
-    global.simpli.OBJECT = "Object";
-    global.simpli.FUNCTION = "Function";
-    global.simpli.INTEGER = "Integer";
-    global.simpli.INT = "Integer";
-    global.simpli.ARRAY = "Array";
+    simpli.STRING = "String";
+    simpli.NUMBER = "Number";
+    simpli.BOOLEAN = "Boolean";
+    simpli.BOOL = "Boolean";
+    simpli.OBJECT = "Object";
+    simpli.FUNCTION = "Function";
+    simpli.INTEGER = "Integer";
+    simpli.INT = "Integer";
+    simpli.ARRAY = "Array";
     // IE backward compatibility
-    global.simpli.UNKNOWN = "unknown";
+    simpli.UNKNOWN = "unknown";
 
-    global.simpli.REQUIRED = true;
-    global.simpli.OPTIONAL = false;
+    simpli.REQUIRED = true;
+    simpli.OPTIONAL = false;
 
     /**
      * Get the class name of a variable
      *
      * @param {mixed} pVar  the variable to get its class
      * @return {string}     the class name
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.getClass = function(pVar) {
+    simpli.getClass = function(pVar) {
         // identify the global object
         var varString = toString.call(pVar);
         // compare to both global and IE11 window under non-strict mode
@@ -567,9 +603,9 @@ var simpli;
      *
      * @param {mixed} pArg  the argument to be checked
      * @return {boolean}    whether the arugment is set
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.exist = function(pArg) {
+    simpli.exist = function(pArg) {
         return (typeof pArg !== "undefined");
     };
 
@@ -579,9 +615,9 @@ var simpli;
      *
      * @param {mixed} pArg  the argument to be checked
      * @return {boolean}    whether the arugment is set
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.isset = function(pArg) {
+    simpli.isset = function(pArg) {
         return (typeof pArg !== "undefined" && pArg !== null);
     };
 
@@ -599,10 +635,10 @@ var simpli;
      * @param {object} pObject          the base object
      * @param {...integer|string} pKey  the key to act upon the object
      */
-    global.simpli.iterativeIsset = function() {
+    simpli.iterativeIsset = function() {
         var l = arguments.length;
         if (l < 1) {
-            throw new Error("Invalid arguments, it should contain at least an object");
+            throw new TypeError("Invalid arguments, it should contain at least an object");
         }
 
         var vObject = arguments[0];
@@ -610,7 +646,7 @@ var simpli;
         for (var i=1; i<l; i++) {
             var vArg = arguments[i];
             if (!simpli.isType(vArg, [simpli.STRING, simpli.INTEGER])) {
-                throw new Error("Invalid key, it should be a string or integer");
+                throw new TypeError("Invalid key, it should be a string or integer");
             }
 
             if (typeof vObject[vArg] === "undefined") {
@@ -628,9 +664,9 @@ var simpli;
      *
      * @param {mixed} pVar  variable to check against
      * @param {boolean}     true if the variable is of type NaN
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.isNaN = function(pVar) {
+    simpli.isNaN = function(pVar) {
         /*
          * a special property of NaN is that the NaN variable is not equal to
          * itself
@@ -643,9 +679,9 @@ var simpli;
      *
      * @param {mixed} pVar  variable to check against
      * @return {boolean}    whether the variable is an integer
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.isInteger = function(pVar) {
+    simpli.isInteger = function(pVar) {
         return (typeof pVar === "number") && (pVar%1 === 0);
     };
 
@@ -656,20 +692,20 @@ var simpli;
      * @param {number} pLowerBound  (Optional) the lower bound
      * @param {number} pUpperBound  (Optional) the upper bound
      * @reutrn {boolean}            whether the variable is within range
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.inRange = function(pVar, pLowerBound, pUpperBound) {
+    simpli.inRange = function(pVar, pLowerBound, pUpperBound) {
         if (!simpli.isType(pVar, simpli.NUMBER)) {
-            throw new Error("Invalid variable, it should be an number");
+            throw new TypeError("Invalid variable, it should be an number");
         }
         if (!simpli.isType(pLowerBound, simpli.NUMBER, simpli.OPTIONAL)) {
-            throw new Error("Invalid lower bound, it should be an number");
+            throw new TypeError("Invalid lower bound, it should be an number");
         }
         if (!simpli.isType(pLowerBound, simpli.NUMBER, simpli.OPTIONAL)) {
-            throw new Error("Invalid upper bound, it should be an number");
+            throw new TypeError("Invalid upper bound, it should be an number");
         }
         if (!simpli.isset(pLowerBound) && !simpli.isset(simpli.pUpperBound)) {
-            throw new Error("Invalid invocation, at least one bound should be specified");
+            throw new TypeError("Invalid invocation, at least one bound should be specified");
         }
         if (simpli.isset(pLowerBound) && pVar < pLowerBound) {
             return false;
@@ -680,15 +716,31 @@ var simpli;
         return true;
     }
 
+    /** 
+     * Check if a variable equals to any of the string in an array
+     *
+     * @param {mixed} pVar      variable to check against
+     * @param {mixed[]} pArray  the string array to check
+     * @return {boolean}        whether the variable equals to any ot the 
+     *                          string
+     */
+    simpli.equalTo = function(pVar, pArray) {
+        for (var i=0,l=pArray.length; i<l; i++) {
+            if (pVar === pArray[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Check if a variable is a string
      *
      * @param {mixed} pVar  variable to check against
      * @return {boolean}    whether the variable is a string
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.isString = function(pVar) {
+    simpli.isString = function(pVar) {
         return (typeof pVar === "string");
     };
 
@@ -697,9 +749,9 @@ var simpli;
      *
      * @param {mixed} pVar  variable to check against
      * @return {boolean}    whether the variable is a number
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.isNumber = function(pVar) {
+    simpli.isNumber = function(pVar) {
         return (typeof pVar === "number");
     };
 
@@ -708,9 +760,9 @@ var simpli;
      *
      * @param {mixed} pVar  variable to check against
      * @return {boolean}    whether the variable is a boolean
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.isBoolean = function(pVar) {
+    simpli.isBoolean = function(pVar) {
         return (typeof pVar === "boolean");
     };
 
@@ -725,9 +777,9 @@ var simpli;
      *                                  object is provided, instanceof pClass
      *                                  will be used to instead
      * @return {boolean}                whether the variable is an object
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.isObject = function(pVar, pClass) {
+    simpli.isObject = function(pVar, pClass) {
         if (typeof pClass === "undefined") {
             return (typeof pVar === "object");
         } else if (typeof pClass === "string") {
@@ -735,7 +787,7 @@ var simpli;
         } else if (typeof pClass === "object") {
             return (pVar instanceof pClass)
         } else {
-            throw new Error("Invalid class, it should be a string or class object");
+            throw new TypeError("Invalid class, it should be a string or class object");
         }
     };
 
@@ -744,9 +796,9 @@ var simpli;
      *
      * @param {mixed} pVar  variable to check against
      * @return {boolean}    whether the variable is a function
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.isFunction = function(pVar) {
+    simpli.isFunction = function(pVar) {
         return (typeof pVar === "function");
     };
 
@@ -755,9 +807,9 @@ var simpli;
      *
      * @param {mixed} pVar  variable to check against
      * @return {boolean}    whether the variable is an array
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.isArray = function(pVar) {
+    simpli.isArray = function(pVar) {
         // find the class of the object using ECMAScript standard
         // Object.prototype is not editable, so it is reliable
         var className = simpli.getClass(pVar);
@@ -790,14 +842,14 @@ var simpli;
      *                                          defaultis true
      * @return {boolean}                        whether the arugment matches 
      *                                          the type
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.isType = function(pVar, pType, pRequired) {
+    simpli.isType = function(pVar, pType, pRequired) {
         // default value for required flag is true
         var vRequired = true;
         if (typeof pRequired !== "undefined") {
             if (typeof pRequired !== "boolean") {
-                throw new Error("Invalid required flag, it should be a boolean");
+                throw new TypeError("Invalid required flag, it should be a boolean");
             }
             vRequired = pRequired;
         }
@@ -813,7 +865,7 @@ var simpli;
             vTypeIsObject = simpli.isObject(pType);
         if (typeof pType !== "string" && !vTypeIsArray && !vTypeIsObject) {
             console.log(pType);
-            throw new Error("Invalid type, it should be a string, object or an array of them");
+            throw new TypeError("Invalid type, it should be a string, object or an array of them");
         }
 
         if (vTypeIsArray) {
@@ -849,7 +901,7 @@ var simpli;
             } else if (simpli.exist(pType[simpli.OBJECT])) {
                 return (simpli.isObject(pVar, pType[simpli.OBJECT]));
             } else {
-                throw new Error("Unrecognized type object, it should be specificing a typed array or object class");
+                throw new TypeError("Unrecognized type object, it should be specificing a typed array or object class");
             }
         } else {
             // string type
@@ -878,7 +930,7 @@ var simpli;
                     return simpli.isArray(pVar);
                     break;
                 default:
-                    throw new Error("Unrecognized type, it should be one of the valid data types");
+                    throw new TypeError("Unrecognized type, it should be one of the valid data types");
             }
         }
         return false;
@@ -890,9 +942,9 @@ var simpli;
      * @param {string} pString  the string to be uppercased first
      * @return {string}         the string with first character uppercased
      */
-    global.simpli.ucfirst = function(pString) {
+    simpli.ucfirst = function(pString) {
         if (!simpli.isType(pString, simpli.STRING)) {
-            throw new Error("Invalid argument, it should be a string");
+            throw new TypeError("Invalid argument, it should be a string");
         }
         return pString.charAt(0).toUpperCase() + pString.slice(1);
     }
@@ -903,123 +955,230 @@ var simpli;
      * functions to be binded to a specific HTML element type
      * 
      * @class DOMElement
-     * @memberof global.simpli
+     * @memberof simpli
      */
-    global.simpli.DOMElement = {
+    simpli.DOMElement = {
+        /**
+         * Allows additional function to be binded to the element type. It is a shorthand function
+         * to bind function to the specified element type
+         * 
+         * @function extend
+         * @param {string} pElement             the element type to be bineded
+         * @param {string} pName                the name of the additional function
+         * @param {function} pFunc              the function body for the single element
+         * @memberof simpli.DOMElement
+         */
+        extend: function(pElement, pName, pFunc) {
+            // arguments checking are done by simpli.HTMLElement.extend()
+            _DOMCollection.extend(pElement, pName, _DOMCollection.CUSTOMIZE, pFunc, function() {
+                /* 
+                 * for single element collection, call the function to its only element to provide
+                 * illusion to users as if they are manipulating the single element
+                 */
+                if (this.length != 1) {
+                    throw new TypeError("Calling " + pName + "() on an element collection");
+                }
+
+                // upper case element type to avoid confusion
+                var vElement = pElement.toUpperCase();
+                // The elemtn type checking is done my the simplify() mechanism
+
+                if (arguments.length == 0) {
+                    return pFunc.call(this[0]);
+                } else {
+                    return pFunc.apply(this[0], arguments);
+                }
+            });
+        }
+    };
+    /**
+     * HTMLElement is a binding managment object that allows additional
+     * functions to be binded to a specific HTML element type
+     * 
+     * @class HTMLElement
+     * @memberof simpli
+     */
+    simpli.HTMLElement = {
         // define constants
         /**
          * @property {integer} ELEMENT  denote ELEMENT type
-         * @memberof global.simpli.DOMElement
+         * @memberof simpli.HTMLElement
          */
         ELEMENT: 0, 
         /**
          * @property {integer} COLLECTION   denote COLLECTION type
-         * @memberof global.simpli.DOMElement
+         * @memberof simpli.HTMLElement
          */
         COLLECTION: 1, 
         /**
-         * @property {integer} BOTH     denote BOTH types applicable
-         * @memberof global.simpli.DOMElement
+         * @property {integer} CUSTOMIZE    denote CUSTOMIZE types applicable
+         * @memberof simpli.HTMLElement
          */
-        BOTH: 2, 
-        /**
-         * a data structure storing the binded functions
-         *
-         * @property {function[]} mBindedFunc   a list of binded functions
-         * @memberof global.simpli.DOMElement
-         */
-        mBindedFunc: {}, 
-        /** 
-         * @property {function} mExecBefore     list of function to be 
-         *                                      executed before binding
-         * @memberof global.simpli.DOMElement
-         */
-        mExecBefore: {}, 
-        /** 
-         * @property {function} mExecAfter  list of function to be executed 
-         *                                  after binding
-         * @memberof global.simpli.DOMElement
-         */
-        mExecAfter: {}, 
+        CUSTOMIZE: 2, 
         /**
          * Allows additional function to be binded to the element type. 
          * 
          * @function extend
-         * @param {string|string[]} pElement    the HTML element to bind the 
-         *                                      function
          * @param {string} pName                the name of the additional
          *                                      function
-         * @param {function} pFunction          the function body
-         * @param {integer} pType               (Optional)specific the type 
-         *                                      to be binded with the
-         *                                      function. <br />
-         *                                      If it is "element" or 
-         *                                      "collection", the function 
-         *                                      will be binded directly to the
-         *                                      object. <br /> 
-         *                                      If it is "both", it behaves 
-         *                                      the same for single element 
-         *                                      object but will wrap the 
-         *                                      function with a forEach loop
-         *                                      to apply the function to all
-         *                                      child of a collection object
-         *                                      when called`
-         * @memberof global.simpli.DOMElement
+         * @param {integer} pType               There are three types of function available:
+         *                                      ELEMENT, COLLECTION or CUSTOMIZE
+         *                                      simpli.HTMLElement.ELEMENT:
+         *                                      the function is only applicable to single element 
+         *                                      only. Element collection should be forbidden to
+         *                                      call the function <br />
+         *                                      <br />
+         *                                      simpli.HTMLElement.COLLECTION
+         *                                      the function is applicable to both single element
+         *                                      and element collection. For element collection, 
+         *                                      each elements inside the collection will be 
+         *                                      iterated and apply the function <br />
+         *                                      <br />
+         *                                      simpli.HTMLElement.CUSTOMIZE
+         *                                      CUSTOMIZE type provides the highest flexibility
+         *                                      in defining the behaviour of the function. Under
+         *                                      CUSTOMIZE type two functions, one for single 
+         *                                      element and one of element collection are needed
+         *                                      as the pararmeters of extend()
+         * @param {function} pElementFunc       the function body for the single element
+         * @param {function} pCollectionFunc    (Optional)the function body for element 
+         *                                      collection, only applicable under CUSTOMIZE type
+         * @memberof simpli.HTMLElement
          */
-        extend: function(pElement, pName, pFunction, pType) {
-            if (!simpli.isType(pElement, [simpli.STRING, {Array:simpli.STRING}])) {
-                throw new Error("Invalid element, it should be a string or array of string");
+        extend: function(pName, pType, pElementFunc, pCollectionFunc) {
+            // arguments checking are done by simpli.HTMLElement.extend()
+            var vType = pType;
+            if (pType === simpli.HTMLElement.ELEMENT) {
+                vType = _DOMCollection.ELEMENT;
+            } else if (pType === simpli.HTMLElement.COLLECTION) {
+                vType = _DOMCollection.COLLECTION;
+            } else if (pType === simpli.HTMLElement.CUSTOMIZE) {
+                vType = _DOMCollection.CUSTOMIZE;
             }
-            if (simpli.isArray(pElement)) {
-                for (var i=0, l=pElement.length; i<l; i++) {
-                    this.extend(pElement[i], pName, pFunction, pType);
-                }
-                return;
+            _DOMCollection.extend("HTMLELEMENT", pName, vType, pElementFunc, pCollectionFunc);
+        }
+    }; 
+    /**
+     * DOMCollection is a binding managment object that allows additional
+     * functions to be binded to a HTMLElement Collection
+     * 
+     * @class _DOMCollection
+     * @private
+     */
+    var _DOMCollection = {
+        // define constants
+        /**
+         * @property {integer} ELEMENT  denote ELEMENT type
+         * @memberof _DOMCollection
+         */
+        ELEMENT: 0, 
+        /**
+         * @property {integer} COLLECTION   denote COLLECTION type
+         * @memberof _DOMCollection
+         */
+        COLLECTION: 1, 
+        /**
+         * @property {integer} CUSTOMIZE    denote CUSTOMIZE types applicable
+         * @memberof _DOMCollection
+         */
+        CUSTOMIZE: 2, 
+        /**
+         * a data structure storing the binded functions
+         *
+         * @property {function[]} mBindedFunc   a list of binded functions
+         * @memberof _DOMCollection
+         */
+        mBindedFunc: {}, 
+        /**
+         * Allows additional function to be binded to the element type. 
+         * 
+         * @function extend
+         * @param {string} pElement             the HTML element to be simplified
+         * @param {string} pName                the name of the additional
+         *                                      function
+         * @param {integer} pType               There are three types of function available:
+         *                                      ELEMENT, COLLECTION or CUSTOMIZE
+         *                                      simpli.HTMLElement.ELEMENT:
+         *                                      the function is only applicable to single element 
+         *                                      only. Element collection should be forbidden to
+         *                                      call the function <br />
+         *                                      <br />
+         *                                      simpli.HTMLElement.COLLECTION
+         *                                      the function is applicable to both single element
+         *                                      and element collection. For element collection, 
+         *                                      each elements inside the collection will be 
+         *                                      iterated and apply the function <br />
+         *                                      <br />
+         *                                      simpli.HTMLElement.CUSTOMIZE
+         *                                      CUSTOMIZE type provides the highest flexibility
+         *                                      in defining the behaviour of the function. Under
+         *                                      CUSTOMIZE type two functions, one for single 
+         *                                      element and one of element collection are needed
+         *                                      as the pararmeters of extend()
+         * @param {function} pElementFunc       the function body for the single element
+         * @param {function} pCollectionFunc    (Optional)the function body for element 
+         *                                      collection, only applicable under CUSTOMIZE type
+         * @memberof _DOMCollection
+         */
+        extend: function(pElement, pName, pType, pElementFunc, pCollectionFunc) {
+            if (!simpli.isType(pElement, simpli.STRING)) {
+                throw new TypeError("Invalid element, it should be a string");
             }
             if (!simpli.isType(pName, simpli.STRING)) {
-                throw new Error("Invalid name, it should be a string");
+                throw new TypeError("Invalid name, it should be a string");
             }
-            if (!simpli.isType(pFunction, simpli.FUNCTION)) {
-                throw new Error("Invalid function, it should be a function");
+            if (!simpli.isType(pType, simpli.INTEGER) || !simpli.equalTo(pType, [simpli.HTMLElement.ELEMENT, simpli.HTMLElement.COLLECTION, simpli.HTMLElement.CUSTOMIZE])) {
+                throw new TypeError("Invalid type, it should be one of the simpli.HTMLElement constants");
             }
-            if (!simpli.isType(pType, simpli.INTEGER, simpli.OPTIONAL)) {
-                throw new Error("Invalid type, it should be an integer");
+            if (!simpli.isType(pElementFunc, simpli.FUNCTION)) {
+                throw new TypeError("Invalid element function, it should be a function");
             }
-            var vType;
-            if (simpli.isset(pType)) {
-                if (!simpli.inRange(pType, 0, 2)) {
-                    throw new Error("Invalid type, it should be one of the DOMElement constants");
+            if (pType === simpli.HTMLElement.CUSTOMIZE) {
+                if (!simpli.isType(pCollectionFunc, simpli.FUNCTION)) {
+                    throw new TypeError("Invalid element collection function, it should be a function");
                 }
-                vType = pType;
             } else {
-                // default type is both
-                vType = simpli.DOMElement.BOTH;
+                if (!simpli.isType(pCollectionFunc, simpli.FUNCTION, simpli.OPTIONAL)) {
+                    throw new TypeError("Invalid element collection function, it should be a function");
+                }
             }
-            var vElement = pElement.toUpperCase();
-            var vBoth = (vType === simpli.DOMElement.BOTH);
+            if (simpli.isset(pCollectionFunc) && pType !== simpli.HTMLElement.CUSTOMIZE) {
+                throw new TypeError("Invalid element collection function, it should only be provided when type is simpli.HTMLElement.CUSTOMIZE");
+            }
 
+            var vElement = pElement.toUpperCase();
             if (!simpli.exist(this.mBindedFunc[vElement])) {
                 this.mBindedFunc[vElement] = {element: [], collection: []};
             }
-            if (vBoth || vType === simpli.DOMElement.ELEMENT) {
-                this.mBindedFunc[vElement]["element"].push([pName, pFunction]);
-            } else if ( vType === simpli.DOMElement.COLLECTION) {
-                this.mBindedFunc[vElement]["collection"].push([pName, pFunction]);
-            }
-            if (vBoth) {
-                // this refers to simpli.DOMElement
-                this.mBindedFunc[vElement]["collection"].push([pName, function(){
+            var vBinedFunc = this.mBindedFunc[vElement];
+
+            vBinedFunc["element"].push([pName, function() {
+                if (arguments.length == 0) {
+                    return pElementFunc.call(simpli(this[0]));
+                } else {
+                    return pElementFunc.apply(simpli(this[0]), arguments);
+                }
+            }]);
+            if (pType === simpli.HTMLElement.ELEMENT) {
+                vBinedFunc["collection"].push([pName, function() {
+                    throw new Error("[SimpliJS] Cannot call " + pName + "() on an element collection");
+                }]);
+            } else if (pType === simpli.HTMLElement.COLLECTION) {
+                vBinedFunc["collection"].push([pName, function() {
                     var args = arguments;
                     // this refers to the simpli element
                     this.forEach(function(currentElement) {
                         if (args.length === 0) {
-                            pFunction.call(currentElement);
+                            pElementFunc.call(currentElement);
                         } else {
-                            pFunction.apply(currentElement, args);
+                            pElementFunc.apply(currentElement, args);
                         }
                     });
                     return this;
                 }]);
+            } else {
+                // pType === simpli.HTMLElement.CUSTOMIZE
+                vBinedFunc["collection"].push([pName, pCollectionFunc]);
             }
         }, 
 
@@ -1030,54 +1189,80 @@ var simpli;
          * @function simplify
          * @param {string} pElement     the HTML element to be simplified
          * @param {object} pObject      the object to be simplified
-         * @return {object}             the simplified object
          * @param {integer} pType       the type of element /collection 
          *                              to be binded with the function
-         * @memberof global.simpli.DOMElement
+         * @return {object}             the simplified object
+         * @memberof _DOMCollection
          */
         simplify: function(pElement, pObject, pType) {
             if (!simpli.isType(pElement, simpli.STRING)) {
-                throw new Error("Invalid element, it should be a string");
+                throw new TypeError("Invalid element, it should be a string");
             }
             if (!simpli.isType(pObject, simpli.OBJECT)) {
-                throw new Error("Invalid function, it should be a function");
+                throw new TypeError("Invalid function, it should be a function");
             }
             if (!simpli.isType(pType, simpli.INTEGER)) {
-                throw new Error("Invalid type, it should be an integer");
+                throw new TypeError("Invalid type, it should be an integer");
             }
-            if (simpli.isset(pType) && !simpli.inRange(pType, 0, 1)) {
-                throw new Error("Invalid type, it should be either ELEMENT or COLLECTION");
+            if (simpli.isset(pType) && !simpli.equalTo(pType, [simpli.HTMLElement.ELEMENT, simpli.HTMLElement.COLLECTION])) {
+                throw new TypeError("Invalid type, it should be either ELEMENT or COLLECTION");
             }
             var vElement = pElement.toUpperCase();
             if (simpli.exist(this.mBindedFunc[vElement])) {
-                /*
-                 * If vExecBefore and vExecAfter is defined, they must have an 
-                 * array of element and collection. So checking vExecBefore or
-                 * vExecAfter is defined is sufficient to execute the for-loop
-                 */
-                if (pType === simpli.DOMElement.ELEMENT) {
+                if (pType === simpli.HTMLElement.ELEMENT) {
                     // bind the functions to element object
-                    if (simpli.exist(this.mBindedFunc[vElement]["element"])) {
-                        var vBindedFunc = this.mBindedFunc[vElement]["element"];
-                        for(var i=0, l=vBindedFunc.length; i<l; i++) {
-                            var vFunc = vBindedFunc[i];
-                            pObject[vFunc[0]] = vFunc[1];
-                        }
+                    var vBindedFunc = this.mBindedFunc[vElement]["element"];
+                    for(var i=0, l=vBindedFunc.length; i<l; i++) {
+                        var vFunc = vBindedFunc[i];
+                        pObject[vFunc[0]] = vFunc[1];
                     }
                 } else {
                     // bind the functions to collection object
-                    if (simpli.exist(this.mBindedFunc[vElement]["collection"])) {
-                        var vBindedFunc = this.mBindedFunc[vElement]["collection"];
-                        for(var i=0, l=vBindedFunc.length; i<l; i++) {
-                            var vFunc = vBindedFunc[i];
-                            pObject[vFunc[0]] = vFunc[1];
-                        }
+                    var vBindedFunc = this.mBindedFunc[vElement]["collection"];
+                    for(var i=0, l=vBindedFunc.length; i<l; i++) {
+                        var vFunc = vBindedFunc[i];
+                        pObject[vFunc[0]] = vFunc[1];
                     }
                 }
             }
             return pObject;
         }
     };
+
+    /**
+     * Add node() method to HTMLElement. It can return the JavaScript 
+     * HTMLElement node of specific index
+     *
+     * Usage:
+     * simpli({HTMLElement}).node({pIndex});
+     *
+     * @function node
+     * @param {integer}     (Optional)the index of HTMLElement node. Default
+     *                      is 0 to provide quick navigation to single element
+     *                      node
+     * @return {object}     the HTMLElement object
+     * @memberof simpli
+     * @instance
+     */
+    simpli.HTMLElement.extend("node", simpli.HTMLElement.CUSTOMIZE, function(pIndex) {
+        if (!simpli.isType(pIndex, simpli.INTEGER, simpli.OPTIONAL)) {
+            throw new TypeError("Invalid index, it should be an integer");
+        }
+        if (simpli.isset(pIndex) && pIndex !== 0) {
+            throw new Error("[SimpliJS] Cannot get node of element, index out of bound");
+        }
+        return this[0];
+    }, function(pIndex) {
+        if (!simpli.isType(pIndex, simpli.INTEGER, simpli.OPTIONAL)) {
+            throw new TypeError("Invalid index, it should be an integer");
+        }
+        // default index is 0
+        var vIndex = (simpli.isset(pIndex))? pIndex: 0;
+        if (this.length <= pIndex) {
+            throw new Error("[SimpliJS] Cannot get node of element, index out of bound");
+        }
+        return this[pIndex];
+    });
 
     /**
      * Add parent() method to document and HTMLElement. It can return the 
@@ -1088,43 +1273,89 @@ var simpli;
      * 
      * @function parent
      * @return {object}     parent simpli object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("document", "parent", function() {
+    simpli.DOMElement.extend("document", "parent", function() {
         return undefined;
-    }, simpli.DOMElement.ELEMENT);
-    global.simpli.DOMElement.extend("HTMLElement", "parent", function() {
-        return simpli(this.parentNode);
-    }, simpli.DOMElement.ELEMENT);
-    global.simpli.DOMElement.extend(["document", "HTMLElement"], "parent", function() {
-        if (this.length === 1) {
-            return this[0].parent();
-        } else {
-            throw new Error("Unable to get parent of an element collection");
-        }
-    }, simpli.DOMElement.COLLECTION);
+    });
+    var _DOMParent = function() {
+        return simpli(this.node().parentNode);
+    };
+    simpli.HTMLElement.extend("parent", simpli.HTMLElement.ELEMENT, _DOMParent);
+    simpli.HTMLElement.extend("p", simpli.HTMLElement.ELEMENT, _DOMParent);
 
+    var _DOMUniqueId = 0;
     /**
      * Add siblings() method to HTMLElement. It can return a list of siblings
      * with the given selector
      *
-     * TODO:
+     * @function descendants
+     * @param {string} pSelector    selector string
+     * @return {object}             the simpli DOM object
+     * @memberof simpli
      */
+    var _DOMSiblings = function() {
+
+    }
+    simpli.HTMLElement.extend("siblings", simpli.HTMLElement.ELEMENT, function(pSelector) {
+    });
 
     /**
      * Add children() method to HTMLElement. It can return a list of children
      * with the given selector
      *
-     * TODO:
+     * @function children
+     * @param {string} pSelector    selector string
+     * @return {object}             the simpli DOM object
+     * @memberof simpli
      */
+    /**
+     * Shorthand for children()
+     *
+     * @function c
+     * @param {string} pSelector    selector string
+     * @return {object}             the simpli DOM object
+     * @memberof simpli
+     */
+    var _DOMDChildren = function(pSelector) {
+        if (!simpli.isType(pSelector, simpli.STRING)) {
+            throw new TypeError("Invalid selector, it should be a string");
+        }
+        var vClass = "_simplijs-cache-" + _DOMUniqueId++;
+        this.addClass(vClass);
+        var vElem = simpli("." + vClass + " > " + pSelector);
+        this.removeClass(vClass);
+        return vElem;
+    }
+    simpli.HTMLElement.extend("children", simpli.HTMLElement.ELEMENT, _DOMDChildren);
+    simpli.HTMLElement.extend("c", simpli.HTMLElement.ELEMENT, _DOMDChildren);
 
     /**
      * Add descendants() method to HTMLElement. It can return a list of 
      * descendants with the given selector
      *
-     * TODO:
+     * @function descendants
+     * @param {string} pSelector    selector string
+     * @return {object}             the simpli DOM object
+     * @memberof simpli
      */
+    /**
+     * Shorthand for descendants()
+     *
+     * @function d
+     * @param {string} pSelector    selector string
+     * @return {object}             the simpli DOM object
+     * @memberof simpli
+     */
+    var _DOMDescendants = function(pSelector) {
+        if (!simpli.isType(pSelector, simpli.STRING)) {
+            throw new TypeError("Invalid selector, it should be a string");
+        }
+        return simpli(this.querySelector(pSelector));
+    }
+    simpli.HTMLElement.extend("descendants", simpli.HTMLElement.ELEMENT, _DOMDescendants);
+    simpli.HTMLElement.extend("d", simpli.HTMLElement.ELEMENT, _DOMDescendants);
 
     /**
      * Add listenTo() method to document and HTMLElement. It can listen to 
@@ -1142,18 +1373,18 @@ var simpli;
      *                                  in the capturing or in the bubbling 
      *                                  phase
      * @return {object}                 this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */ 
-    global.simpli.DOMElement.extend(["HTMLElement", "document"], "listenTo", function(pType, pListener, pUseCapture) {
+    var _DOMListenTo = function(pType, pListener, pUseCapture) {
         if (!simpli.isType(pType, simpli.STRING)) {
-            throw new Error("Invalid type, it should be a string");
+            throw new TypeError("Invalid type, it should be a string");
         }
         if (!simpli.isType(pListener, simpli.FUNCTION)) {
-            throw new Error("Invalid type, it should be a function");
+            throw new TypeError("Invalid type, it should be a function");
         }
         if (!simpli.isType(pUseCapture, simpli.BOOLEAN, simpli.OPTIONAL)) {
-            throw new Error("Invalid pUseCapture, it should be a function");
+            throw new TypeError("Invalid pUseCapture, it should be a function");
         }
         // default value for useCapture is false
         var vUseCapture = simpli.isset(pUseCapture)? pUseCapture: false;
@@ -1161,12 +1392,14 @@ var simpli;
             this.addEventListener(pType, pListener, vUseCapture);
         } else if (simpli.exist(this.attachEvent)) {
             // IE5-8 does not have addEventListener method
-            this.attachEvent("on"+pType, pListener);
+            this.node().attachEvent("on"+pType, pListener);
         } else {
-            throw new Error("Event listening is not supported");
+            throw new TypeError("Event listening is not supported");
         }
         return this;
-    });
+    }
+    simpli.DOMElement.extend("document", "listenTo", _DOMListenTo);
+    simpli.HTMLElement.extend("listenTo", simpli.HTMLElement.COLLECTION, _DOMListenTo);
 
     /**
      * Add stopListenTo() method to document and HTMLElement. It can stop the 
@@ -1184,12 +1417,12 @@ var simpli;
      * @param {function} pListener      the function to run when the event 
      *                                  occurs
      * @return {object}                 this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("document", "ready", function(pListener) {
+    simpli.DOMElement.extend("document", "ready", function(pListener) {
         if (!simpli.isType(pListener, simpli.FUNCTION)) {
-            throw new Error("Invalid type, it should be a function");
+            throw new TypeError("Invalid type, it should be a function");
         }
 
         if (simpli.exist(this.addEventListener)) {
@@ -1209,9 +1442,9 @@ var simpli;
             }
             document.attachEvent("onreadystatechange", vReadyStateListener);
         } else {
-            throw new Error("Event listening is not supported");
+            throw new TypeError("Event listening is not supported");
         }
-    }, simpli.DOMElement.ELEMENT);
+    });
 
     /**
      * Add onClick() method to document and HTMLElement. It can bind an 
@@ -1224,18 +1457,20 @@ var simpli;
      *                                  in the capturing or in the bubbling 
      *                                  phase
      * @return {object}                 this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend(["HTMLElement", "document"], "click", function(pListener, pUseCapture) {
+    var _DOMClick = function(pListener, pUseCapture) {
         if (!simpli.isType(pListener, simpli.FUNCTION)) {
-            throw new Error("Invalid type, it should be a function");
+            throw new TypeError("Invalid type, it should be a function");
         }
         if (!simpli.isType(pUseCapture, simpli.BOOLEAN, simpli.OPTIONAL)) {
-            throw new Error("Invalid pUseCapture, it should be a function");
+            throw new TypeError("Invalid pUseCapture, it should be a function");
         }
         this.listenTo("click", pListener, pUseCapture);
-    });
+    };
+    simpli.DOMElement.extend("document", "click", _DOMClick);
+    simpli.HTMLElement.extend("click", simpli.HTMLElement.COLLECTION, _DOMClick);
 
     // a list of HTML attribute to DOM standard property name conversion
     var DOMProperty = {
@@ -1248,7 +1483,7 @@ var simpli;
      * @param {string} pAttr    the attibute to be converted
      * @return {string}         the porperty equivalent
      */
-    var attrToProp = function(pAttr) {
+    var _DOMAttrToProp = function(pAttr) {
         return (simpli.exist(DOMProperty[pAttr]))? DOMProperty[pAttr]: pAttr;
     };
     /**
@@ -1260,12 +1495,12 @@ var simpli;
      * @param {string|number} pValue        (Optional)the  new value for
      *                                      the property
      */
-    var setProp = function(pProp, pValue) {
-        var vProp = attrToProp(pProp);
+    var _DOMSetProp = function(pProp, pValue) {
+        var vProp = _DOMAttrToProp(pProp);
         if (simpli.exist(this[vProp])) {
             this[vProp] = pValue;
         } else {
-            this.setAttribute(pProp, pValue);
+            this.node().setAttribute(pProp, pValue);
         }
     }
     /**
@@ -1278,23 +1513,23 @@ var simpli;
      *                                      the property
      * @return {object|string|undefined}    this object for set, or string 
      *                                      or underfined for retrieval
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend(["HTMLElement", "document"], "prop", function(pProp, pValue) {
+    var _DOMProp = function(pProp, pValue) {
         if (!simpli.isType(pProp, simpli.STRING)) {
-            throw new Error("Invalid property, it should be a string");
+            throw new TypeError("Invalid property, it should be a string");
         }
         if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
-            throw new Error("Invalid property, it should be a string");
+            throw new TypeError("Invalid property, it should be a string");
         }
 
         if (simpli.isset(pValue)) {
             // set property
-            setProp.call(this, pProp, pValue);
+            _DOMSetProp.call(this, pProp, pValue);
         } else {
             // retrieval
-            var vProp = attrToProp(pProp);
+            var vProp = _DOMAttrToProp(pProp);
             var vResult;
             // this.{property} usually works
             if (simpli.exist(this[vProp])) {
@@ -1303,7 +1538,7 @@ var simpli;
                     vResult = "";
                 }
             } else {
-                vResult = this.getAttribute(pProp);
+                vResult = this.node().getAttribute(pProp);
                 /*
                  * if the attribute does not exists, null or "" will be 
                  * returned
@@ -1314,19 +1549,20 @@ var simpli;
             }
             return vResult;
         }
-    }, simpli.DOMElement.ELEMENT);
-    global.simpli.DOMElement.extend(["HTMLElement", "document"], "prop", function(pProp, pValue) {
+    }
+    simpli.DOMElement.extend("document", "prop", _DOMProp);
+    simpli.HTMLElement.extend("prop", simpli.HTMLElement.CUSTOMIZE, _DOMProp, function(pProp, pValue) {
         if (!simpli.isType(pProp, simpli.STRING)) {
-            throw new Error("Invalid property, it should be a string");
+            throw new TypeError("Invalid property, it should be a string");
         }
         if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
-            throw new Error("Invalid property, it should be a string");
+            throw new TypeError("Invalid property, it should be a string");
         }
 
         if (simpli.isset(pValue)) {
             // set property
             this.forEach(function(currentElement) {
-                setProp.call(currentElement, pProp, pValue);
+                _DOMSetProp.call(currentElement, pProp, pValue);
             })
             return this;
         } else {
@@ -1335,42 +1571,170 @@ var simpli;
              * retrieve only when there is only one element, otherwise throw
              * an error
              */
-            if (this.length === 1) {
-                var vProp = attrToProp(pProp);
-                var vResult;
-                var elem = this[0];
-                if (simpli.exist(elem[vProp])) {
-                    vResult = elem[vProp];
-                    if (vResult === null) {
-                        vResult = "";
-                    }
-                } else {
-                    vResult = elem.getAttribute(attrToProp(pProp));
-                    /*
-                     * if the attribute does not exists, null or "" will be 
-                     * returned
-                     */
-                    if(vResult === null || vResult === "") {
-                        vResult = undefined;
-                    }
-                }
-                return vResult;
-            } else {
-                throw new Error("Unable to retrieve property from an element collection");
+            throw new Error("[SimpliJS] Cannot retrieve property from an element collection");
+        }
+    });
+
+    /**
+     * Check if the element belongs to certain CSS class
+     *
+     * @function isClass
+     * @param {string} pClassName   the class anme
+     * @return {boolean}            whether the element belongs to that class
+     * @memberof simpli
+     * @instance
+     */
+    simpli.HTMLElement.extend("isClass", simpli.HTMLElement.ELEMENT, function(pClassName) {
+        if (!simpli.isType(pClassName, simpli.STRING)) {
+            throw new TypeError("Invalid class name, it should be a string");
+        }
+        var vClassList = this.prop("class").split(" ");
+        for (var i=0,l=vClassList.length; i<l; i++) {
+            if (vClassList[i] === pClassName) {
+                return true;
             }
         }
-    }, simpli.DOMElement.COLLECTION);
+        return false;
+    });
+
+    /**
+     * Add a CSS class to the element
+     *
+     * @function addClass
+     * @param {string} pClassName   the class anme to be added
+     * @return {object}             simpli object
+     * @memberof simpli
+     * @instance
+     */
+    simpli.HTMLElement.extend("addClass", simpli.HTMLElement.COLLECTION, function(pClassName) {
+        if (!simpli.isType(pClassName, simpli.STRING)) {
+            throw new TypeError("Invalid class name, it should be a string");
+        }
+        var vClassProp = this.prop("class");
+        this.prop("class", ((typeof vClassProp === "undefined" || vClassProp === "")? pClassName: vClassProp+" "+pClassName));
+        return this;
+    });
+
+    /**
+     * Add a CSS class to the element
+     *
+     * @function removeClass
+     * @param {string} pClassName   the class anme to be added
+     * @return {object}             simpli object
+     * @memberof simpli
+     * @instance
+     */
+    simpli.HTMLElement.extend("removeClass", simpli.HTMLElement.COLLECTION, function(pClassName) {
+        if (!simpli.isType(pClassName, simpli.STRING)) {
+            throw new TypeError("Invalid class name, it should be a string");
+        }
+        var vClassList = this.prop("class").split(" ");
+        var vNewClassName = "";
+        var vFirstClass = false;
+        for (var i=0,l=vClassList.length; i<l; i++) {
+            if (vClassList[i] === pClassName) {
+                continue;
+            } else {
+                if (vFirstClass === true) {
+                    vNewClassName = vClassList[i];
+                    vFirstClass = false;
+                } else {
+                    vNewClassName += " "+vClassList[i];
+                }
+            }
+        }
+        this.prop("class", vNewClassName);
+        return this;
+    });
+
+    /**
+     * Set or retrieve the text of an element
+     *
+     * @function text
+     * @param {string} pText    (Optional) the text to be set
+     * @return {object|string}  the simpli object or the text when pText is 
+     *                          null
+     * @memberof simpli
+     * @instance
+     */
+    simpli.HTMLElement.extend("text", simpli.HTMLElement.CUSTOMIZE, function(pText) {
+        if (!simpli.isType(pText, simpli.STRING, simpli.OPTIONAL)) {
+            throw new TypeError("Invalid text, it should be a string")
+        }
+        if (simpli.isset(pText)) {
+            // set element innerText
+            this.node().innerText = pText;
+            return this;
+        } else {
+            // retrieval
+            return this.node().innerText;
+        }
+    }, function(pText) {
+        if (!simpli.isType(pText, simpli.STRING, simpli.OPTIONAL)) {
+            throw new TypeError("Invalid text, it should be a string")
+        }
+        if (simpli.isset(pText)) {
+            // set all element innerText
+            this.forEach(function(currentElement, index) {
+                curentElement.node().innerText = pText;
+            })
+            return this;
+        } else {
+            // retrieval
+            throw new Error("[SimpliJS] Cannot retrieve text on an element collection")
+        }
+    });
+
+    /**
+     * Set or retrieve the html of an element
+     *
+     * @function html
+     * @param {string} pHTML    (Optional) the HTML to be set
+     * @return {object|string}  the simpli object or the HTML when pHTML is 
+     *                          null
+     * @memberof simpli
+     * @instance
+     */
+    simpli.HTMLElement.extend("html", simpli.HTMLElement.CUSTOMIZE, function(pHTML) {
+        if (!simpli.isType(pHTML, simpli.STRING, simpli.OPTIONAL)) {
+            throw new TypeError("Invalid text, it should be a string")
+        }
+        if (simpli.isset(pHTML)) {
+            // set element innerText
+            this.node().innerHTML = pHTML;
+            return this;
+        } else {
+            // retrieval
+            return this.node().innerHTML;
+        }
+    }, function(pHTML) {
+        if (!simpli.isType(pHTML, simpli.STRING, simpli.OPTIONAL)) {
+            throw new TypeError("Invalid text, it should be a string")
+        }
+        if (simpli.isset(pHTML)) {
+            // set all element innerText
+            this.forEach(function(currentElement, index) {
+                curentElement.node().innerHTML = pHTML;
+            })
+            return this;
+        } else {
+            // retrieval
+            throw new Error("[SimpliJS] Cannot retrieve html on an element collection")
+        }
+    });
 
     /**
      * Convert a standard CSS style attribute to its camel case notation
      * e.g. font-size to fontSize
      *
+     * @function camerlize
      * @param {string} pAttr    the attribute to be camelized
      * @return {string}         the attribute in camel case notation
+     * @memberof global.simpli
      */
-    var camelize = function(pAttr) {
+    simpli.camelize = function(pAttr) {
         if (!simpli.isType(pAttr, simpli.STRING)) {
-            throw new Error("Invalid attribute, it should be a string");
+            throw new TypeError("Invalid attribute, it should be a string");
         }
         var hump;
         var humpRegExp = /-([a-z])/;
@@ -1394,7 +1758,7 @@ var simpli;
      *                                      retrieval.
      * @return {object}                     this object
      */
-    var setCss = function(pStyle, pValue) {
+    var _DOMSetCss = function(pStyle, pValue) {
         if (simpli.isArray(pStyle)) {
             for(var i=0, l=pStyle.length; i<l; i++) {
                 this.css(pStyle[i], pValue);
@@ -1426,20 +1790,20 @@ var simpli;
      *                                      retrieval
      * @return {string|object}              string when doing retrieval, this 
      *                                      object when doing set
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("HTMLElement", "css", function(pStyle, pValue) {
+    simpli.HTMLElement.extend("css", simpli.HTMLElement.CUSTOMIZE, function(pStyle, pValue) {
         if (!simpli.isType(pStyle, [simpli.STRING, {Array:simpli.STRING}])) {
-            throw new Error("Invalid style, it should be a string or array of string");
+            throw new TypeError("Invalid style, it should be a string or array of string");
         }
         if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
-            throw new Error("Invalid value, it should be a string or number");
+            throw new TypeError("Invalid value, it should be a string or number");
         }
         // distinguish beteween set and get
         if (simpli.isset(pValue)) {
             // set style
-            setCss.call(this, pStyle, pValue);
+            _DOMSetCss.call(this, pStyle, pValue);
         } else {
             // retrieval
             if (typeof this.currentStyle !== "undefined") {
@@ -1448,25 +1812,24 @@ var simpli;
                  * to be withou the "-" and the following words have their
                  * frist character capitalized
                  */
-                return this.currentStyle[camelize(pStyle)];
+                return this.currentStyle[simpli.camelize(pStyle)];
             } else if (typeof window.getComputedStyle !== "undefined") {
                 return document.defaultView.getComputedStyle(this, null).getPropertyValue(pStyle);
             }
         }
         return this;
-    }, simpli.DOMElement.ELEMENT);
-    global.simpli.DOMElement.extend("HTMLElement", "css", function(pStyle, pValue) {
+    }, function(pStyle, pValue) {
         if (!simpli.isType(pStyle, [simpli.STRING, simpli.ARRAY])) {
-            throw new Error("Invalid style, it should be a string or array of string");
+            throw new TypeError("Invalid style, it should be a string or array of string");
         }
         if (!simpli.isType(pValue, [simpli.STRING, simpli.NUMBER], simpli.OPTIONAL)) {
-            throw new Error("Invalid value, it should be a string or number");
+            throw new TypeError("Invalid value, it should be a string or number");
         }
         // distinguish beteween set and get
         if (simpli.isset(pValue)) {
             // set style
             this.forEach(function(currentElement) {
-                setCss.call(currentElement, pStyle, pValue);
+                _DOMSetCss.call(currentElement[0], pStyle, pValue);
             });
         } else {
             // retrieval
@@ -1474,14 +1837,10 @@ var simpli;
              * retrieve only when there is only one element, otherwise throw
              * an error
              */
-            if (this.length === 1) {
-                return this[0].css(pStyle);
-            } else {
-                throw new Error("Unable to retrieve css from an element collection");
-            }
+            throw new Error("[SimpliJS] Cannot retrieve css from an element collection");
         }
         return this;
-    }, simpli.DOMElement.COLLECTION);
+    });
 
     /**
      * Add removeCss() to HTMLElement. It can remove inline css from the 
@@ -1491,12 +1850,12 @@ var simpli;
      * @param {string|string[]} pStyle      style attribute or list of style 
      *                                      attributes
      * @return {object}         this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("HTMLElement", "removeCss", function(pStyle) {
+    simpli.HTMLElement.extend("removeCss", simpli.HTMLElement.COLLECTION, function(pStyle) {
         if (!simpli.isType(pStyle, [simpli.STRING, {Array:simpli.STRING}])) {
-            throw new Error("Invalid style, it should be a string or array of string");
+            throw new TypeError("Invalid style, it should be a string or array of string");
         }
         if (simpli.isArray(pStyle)) {
             for(var i=0, l=pStyle.length; i<l; i++) {
@@ -1519,12 +1878,12 @@ var simpli;
      * @param {string} pValue   (Optional)any valid display value that is 
      *                          non-"none". Default value is "block"
      * @return {object}         this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("HTMLElement", "show", function(pValue) {
+    simpli.HTMLElement.extend("show", simpli.HTMLElement.COLLECTION, function(pValue) {
         if (!simpli.isType(pValue, simpli.STRING, simpli.OPTIONAL)) {
-            throw new Error("Invalid value, it should be a string");
+            throw new TypeError("Invalid value, it should be a string");
         }
         if (simpli.isset(pValue)) {
             switch (pValue) {
@@ -1550,9 +1909,9 @@ var simpli;
                     this.style.display = pValue;
                     break;
                 case "none": 
-                    throw new Error("simpli(..).show(\"none\") is not supported. Please use simpli(..).hide() instead");
+                    throw new TypeError("simpli(..).show(\"none\") is not supported. Please use simpli(..).hide() instead");
                 default: 
-                    throw new Error("Unrecognized display value. It should be one of the standard values");
+                    throw new TypeError("Unrecognized display value. It should be one of the standard values");
             }
         } else {
             // default value is block
@@ -1568,10 +1927,10 @@ var simpli;
      * 
      * @function hide
      * @return {object}     this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("HTMLElement", "hide", function() {
+    simpli.HTMLElement.extend("hide", simpli.HTMLElement.COLLECTION, function() {
         this.style.display = "none";
         return this;
     });
@@ -1586,20 +1945,20 @@ var simpli;
      * @param {function} pCallBefore    (Optional)callback before fade in
      * @param {function} pCallAFter     (Optional)callback after fade in
      * @return {object}                 this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("HTMLElement", "fadeIn", function(pTimeout, pCallBefore, pCallAfter) {
+    simpli.HTMLElement.extend("fadeIn", simpli.HTMLElement.COLLECTION, function(pTimeout, pCallBefore, pCallAfter) {
         // default timeout is 3s
         var vTimeout = 300;
         if (!simpli.isType(pTimeout, simpli.INTEGER, simpli.OPTIONAL)) {
-            throw new Error("Invalid timeout, it should be an integer");
+            throw new TypeError("Invalid timeout, it should be an integer");
         }
         if (!simpli.isType(pCallBefore, simpli.FUNCTION, simpli.OPTIONAL)) {
-            throw new Error("Invalid before callback, it should be a function");
+            throw new TypeError("Invalid before callback, it should be a function");
         }
         if (!simpli.isType(pCallAfter, simpli.FUNCTION, simpli.OPTIONAL)) {
-            throw new Error("Invalid after callback, it should be a function");
+            throw new TypeError("Invalid after callback, it should be a function");
         }
         if (simpli.isset(pTimeout)) {
             vTimeout = pTimeout;
@@ -1647,20 +2006,20 @@ var simpli;
      * @param {function} pCallBefore    (Optional)callback before fade out
      * @param {function} pCallAFter     (Optional)callback after fade out
      * @return {object}                 this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("HTMLElement", "fadeOut", function(pTimeout, pCallBefore, pCallAfter) {
+    simpli.HTMLElement.extend("fadeOut", simpli.HTMLElement.COLLECTION, function(pTimeout, pCallBefore, pCallAfter) {
         // default timeout is 3s
         var vTimeout = 300;
         if (!simpli.isType(pTimeout, simpli.INTEGER, simpli.OPTIONAL)) {
-            throw new Error("Invalid timeout, it should be an integer");
+            throw new TypeError("Invalid timeout, it should be an integer");
         }
         if (!simpli.isType(pCallBefore, simpli.FUNCTION, simpli.OPTIONAL)) {
-            throw new Error("Invalid before callback, it should be a function");
+            throw new TypeError("Invalid before callback, it should be a function");
         }
         if (!simpli.isType(pCallAfter, simpli.FUNCTION, simpli.OPTIONAL)) {
-            throw new Error("Invalid after callback, it should be a function");
+            throw new TypeError("Invalid after callback, it should be a function");
         }
         if (simpli.isset(pTimeout)) {
             vTimeout = pTimeout;
@@ -1696,35 +2055,8 @@ var simpli;
     });
 
     /**
-     * Add forEach() method to HTMLElement. It adds compatibility support to 
-     * single HTMLElement<br />
-     * Usage:
-     * {HTMLCollection}.forEach(callback, (optional)thisArg);
-     *
-     * @function forEach
-     * @param {function} pCcllback  the callback function to be called on each 
-     *                              HTMLElement, its signature should be like
-     *                              function(currentElement, index, array) {}
-     * @param Object pThisArg       (Optional) the "this" context in the 
-     *                              callback
-     * @return {object}             this object
-     * @memberof global.simpli
-     * @instance
-     */
-    global.simpli.DOMElement.extend("HTMLElement", "forEach", function(pCallback, pThisArg) {
-        if (!simpli.isType(pCallback, simpli.FUNCTION)) {
-        throw new Error("Invalid callback, it should be a function");
-        }
-        if (!simpli.isType(pThisArg, simpli.OBJECT, simpli.OPTIONAL)) {
-        throw new Error("Invalid this context, it should be an object");
-        }
-        pCallback.call(pThisArg, this, 0 , this);
-
-        return this;
-    }, simpli.DOMElement.ELEMENT);
-    /**
-     * Add forEach() method to HTMLCollection. It can loop through the 
-     * HTMLCollection and call the callback function to each of the
+     * Add forEach() method to HTMLElement. It can loop through the 
+     * HTMLElement collection and call the callback function to each of the
      * HTMLElement<br />
      * Usage:
      * {HTMLCollection}.forEach(callback, (optional)thisArg);
@@ -1736,29 +2068,46 @@ var simpli;
      * @param Object pThisArg       (Optional) the "this" context in the 
      *                              callback
      * @return {object}             this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("HTMLCollection", "forEach", function(pCallback, pThisArg) {
+    simpli.HTMLElement.extend("forEach", simpli.HTMLElement.CUSTOMIZE, function(pCallback, pThisArg) {
         if (!simpli.isType(pCallback, simpli.FUNCTION)) {
-        throw new Error("Invalid callback, it should be a function");
+        throw new TypeError("Invalid callback, it should be a function");
         }
         if (!simpli.isType(pThisArg, simpli.OBJECT, simpli.OPTIONAL)) {
-        throw new Error("Invalid this context, it should be an object");
+        throw new TypeError("Invalid this context, it should be an object");
+        }
+        // wrap the curent element in simpli for consistency
+        var vObject = simpli(this[0]);
+        if (simpli.isset(pThisArg)) {
+            pCallback.call(pThisArg, vObject, 0, this);
+        } else {
+            pCallback.call(vObject, vObject, 0, this);
+        }
+
+        return this;
+    }, function(pCallback, pThisArg) {
+        if (!simpli.isType(pCallback, simpli.FUNCTION)) {
+        throw new TypeError("Invalid callback, it should be a function");
+        }
+        if (!simpli.isType(pThisArg, simpli.OBJECT, simpli.OPTIONAL)) {
+        throw new TypeError("Invalid this context, it should be an object");
         }
         var vLen = this.length;
+        // wrap the curent element in simpli for consistency
         if (simpli.isset(pThisArg)) {
             for (var i=0; i<vLen; i++) {
-                pCallback.call(pThisArg, this[i], i , this);
+                pCallback.call(pThisArg, simpli(this[i]), i , this);
             }
         } else {
             for (var i=0; i<vLen; i++) {
-                pCallback.call(this[i], this[i], i , this);
+                pCallback.call(simpli(this[i]), simpli(this[i]), i, this);
             }
         }
 
         return this;
-    }, simpli.DOMElement.ELEMENT);
+    });
     
     /**
      * Add getSelectedValue() method to HTMLSelectElement. It returns the user 
@@ -1768,10 +2117,10 @@ var simpli;
      *
      * @function getSelectedValue
      * @return {object}     this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("SELECT", "getSelectedValue", function() {
+    simpli.DOMElement.extend("SELECT", "getSelectedValue", function() {
         return this.options[this.selectedIndex].value;
     });
 
@@ -1783,10 +2132,10 @@ var simpli;
      *
      * @function getSelectedOption
      * @return {object}     this object
-     * @memberof global.simpli
+     * @memberof simpli
      * @instance
      */
-    global.simpli.DOMElement.extend("SELECT", "getSelectedOption", function() {
+    simpli.DOMElement.extend("SELECT", "getSelectedOption", function() {
         return this.options[this.selectedIndex].text;
     });
 })(this);
