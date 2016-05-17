@@ -22,9 +22,9 @@ Simpli.js ia a library that features detail run-time function arguments check an
 2. add the following code inside the ```<head>``` section of the webpage.  
 ``` html
 <!-- The Simpli.js core file -->
-<script src="js/simpli.js" />
+<script src="js/simpli-1.2.0.min.js" />
 <!-- Include this line if you need the basic data structure module -->
-<script src="js/simpli.DataStructure.js" />
+<script src="js/simpli-1.2.0.DataStructure.js" />
 ```
 
 ## Arguments Check Example
