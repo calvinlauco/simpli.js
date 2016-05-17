@@ -224,7 +224,7 @@ Uncaught TypeError: anonymous("foo", 1, -->1<--): Expected 'boolean', 'number' g
 ```
   
 ## Data Type Hierarchy
-![Data Type Hierarchy Diagram](http://yuhlau.github.io/simplijs/1.2.0/datatype_hierarchy.png)  
+![Data Type Hierarchy Diagram](http://yuhlau.github.io/simplijs/1.2.0/datatype-hierarchy.png)  
 * Strictly speaking, all JavaScript variable is `Object`. However, this definition of `Object` is too board and usually does not reflect most developer idea of `Object`. So in Simpli.js `Object` refers only to variable declared using object literal
 * In JavaScript, all number are in 64bit floating point. It is impossible to distinguish betwen `Integer` and `Decimal` as other programming languages
 * To be consistent with C-language, `Character Array` is not an array of `Character` but instead a `String`
