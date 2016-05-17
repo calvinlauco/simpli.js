@@ -125,7 +125,7 @@ function foo(bar) {
 ```
   
 ### 6. Setting the mode
-`simpli.argc()` has two modes, `STRICT` mode supports only JavaScript standard built-in data types and the wildcard `*`. In `EXTEND` mode (default) more data types are supported. For details please refer to the Data Type Hierarchy Section
+`simpli.argc()` has two modes, `STRICT` mode supports only JavaScript standard built-in data types and the wildcard `*`. In `EXTEND` mode (default) more data types are supported. For details please refer to the [Data Type Hierarchy](#data-type-hierarchy) section
 ``` javascript
 simpli.argc.mode(simpli.argc.MODE_STRICT);
 function foo() {
