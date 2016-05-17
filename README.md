@@ -139,7 +139,7 @@ simpli.argc.mode(simpli.argc.MODE_EXTEND);
 ```
   
 ### 7. Setting the error reporting mode
-`simpli.argc()` has two error reporting modes, `SILENT` mode will only return boolean value upon successful arguments check. `ERROR` mode will raise TypeError if there is any invalid arguments
+`simpli.argc()` has two error reporting modes, `SILENT` mode will only return boolean value upon successful arguments check. `ERROR` mode will raise TypeError if there is/are any invalid arguments
 ``` javascript
 simpli.argc.errorMode(simpli.argc.ERRMODE_SILENT);
 function foo() {
@@ -152,7 +152,7 @@ foo("bar");
 ## API
 A full API documentation can be found on [http://yuhlau.github.io/simplijs/1.2.0/doc/](http://yuhlau.github.io/simplijs/1.2.0/doc/). 
   
-Moreover, you can also have a look to the unit test in the folder ```unitTest/``` or [Hosted Unit Test Page](http://yuhlau.github.io/simplijs/1.2.0/unitTest/). It can gives you some ideas on how those functions are used.  
+Moreover, you can also have a look to the unit test in the folder ```unitTest/``` or [Hosted Unit Test Page](http://yuhlau.github.io/simplijs/1.2.0/unitTest/basic.html). It can gives you some ideas on how those functions are used.  
   
 ## Arguments Check API
 ### simpli.argc(arguments, [...signature, callback])
@@ -170,7 +170,7 @@ Moreover, you can also have a look to the unit test in the folder ```unitTest/``
 | callback | function | (Optional) The callback function when there is/are invalid argument(s) |
   
 ### Return Value
-Returns true if all the arguments match with the signature provided, False otheriwise
+Returns true if all the arguments match with the signature provided, false otheriwise
   
 ### TypeError
 If the error reporting mode is set to `STRICT` (default), a TypeError will be raised if there is/are any invalid argument
