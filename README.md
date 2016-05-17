@@ -1,5 +1,5 @@
 # Simpli.js
-Simpli.js ia a library that features detail run-time function arguments check and provides basic data structure. It provides useful detail like file and line number which helps developers debugging their programs more easily. Simpli.js extends the JavaScript standard built-in data type and introduces some data type that are common in other programming language but not in JavaScript.
+Simpli.js ia a library that features detail run-time function arguments check and provides basic data structure. It provides useful detail for debugging your program much much easier. Simpli.js extends the JavaScript standard built-in data type and introduces some data type that are common in other programming language but not in JavaScript.
   
 ## Index
 * [Features](#features)
