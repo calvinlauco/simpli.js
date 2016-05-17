@@ -38,7 +38,8 @@ Simpli.js ia a library that features detail run-time function arguments check an
 7. [Setting the error reporting mode](#7-setting-the-error-reporting-mode)
 
 ### 1. Simple arguments check  
-There are two ways to invoke the function arguments check
+There are two ways to invoke the arguments check  
+1) Provide argument signatures one-by-one as Parameters
 ``` javascript
 function foo(bar, baz, flag) {
     // The first argument must be `arguments`
@@ -53,6 +54,7 @@ foo("foo", 1, true);
 // this line will raise a TypeError
 foo("foo", 1, 1);
 ```
+2) Provide argument signatures in Array format
 ``` javascript
 function foo(bar, baz, flag) {
     // Notice the argument signatures are put inside an array
