@@ -40,7 +40,7 @@ Simpli.js ia a library that features detail run-time function arguments check an
 ### 1. Simple arguments check  
 There are two ways to invoke the function arguments check
 ``` javascript
-function foo() {
+function foo(bar, baz, flag) {
     // The first argument must be `arguments`
     simpli.argc(arguments, "string", "bool|int", "bool");
 
@@ -54,7 +54,7 @@ foo("foo", 1, true);
 foo("foo", 1, 1);
 ```
 ``` javascript
-function foo() {
+function foo(bar, baz, flag) {
     // Notice the argument signatures are put inside an array
     simpli.argc(arguments, ["string", "bool|int", "bool"]);
 
@@ -75,7 +75,7 @@ function foo(message) {
     message = message || 'This is a default value';
 }
 
-function bar() {
+function bar(baz, flag) {
     /*
      * Optional argument is not necessary to be the last argument because
      * strictly speaking Optional is just checking the argument with the type
@@ -110,7 +110,7 @@ var simpli.argc = function() {
   
 ### 5. Providing callback function
 ``` javascript
-function foo() {
+function foo(bar) {
    simpli.argc(arguments, "int", function(argList) {
      // list all the invalid argument(s) to terminal
      argList.forEach(function(arg) {
