@@ -47,10 +47,10 @@ function foo() {
     // Argument check has passed, all arugments are valid
 }
 
-// the line is all right
+// this line is all right
 foo("foo", 1, true);
 
-//this line will raise a TypeError
+// this line will raise a TypeError
 foo("foo", 1, 1);
 ```
 ``` javascript
