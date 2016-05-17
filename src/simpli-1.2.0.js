@@ -1375,9 +1375,10 @@ var simpli;
             // arguments provided are more than the signatures provided
             /*
              * Since an argument may be optional, so it is possible that the
-             * argument length is less than the signature length. And the
+             * argument length is less than the signature length. But the
              * validity of optional arguments is the responsibility of the
-             * optional argument routine
+             * optional argument routine and if the control logic reach here
+             * it means arguments provided are really more than specified
              */
             invalidObj = _argc.MismatchArgNumber();
             // only record the first invalid argument
