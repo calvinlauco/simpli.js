@@ -88,7 +88,7 @@ function bar(baz, flag) {
 ```
   
 ### 3. Repeatable argument
-Sometimes you may want to specific repeatable argument that can be repeated any times. 
+Sometimes you may want to specific repeatable argument that can be repeated any number of times. 
 ``` javascript
 function foo() {
     simpli.argc(arguments, "int", "...string");
