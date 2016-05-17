@@ -1,5 +1,5 @@
 # Simpli.js
-Simpli.js is a library that features run-time function arguments check and provides basic data structure. It provides useful detail for debugging your program much much easier. Simpli.js extends the JavaScript standard built-in data type and introduces some data type that are common in other programming language but not in JavaScript.
+Simpli.js is a JavaScript library that features run-time function arguments check and provides basic data structure. It provides useful detail for debugging your program much much easier. Simpli.js extends the JavaScript standard built-in data type and introduces some data type that are common in other programming language but not in JavaScript.
   
 ## Index
 * [Features](#features)
