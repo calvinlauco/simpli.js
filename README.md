@@ -32,7 +32,7 @@ Simpli.js ia a library that features detail run-time function arguments check an
 1. [Simple arguments check](#1-simple-arguments-check)
 2. [Optional argument with default value](#2-optional-argument-with-default-value)
 3. [Repeatable argument](#3-repeatable-argument)
-4. [Optional repetable argument](#4-optional-repetable-argument)
+4. [Optional repeatable argument](#4-optional-repeatable-argument)
 5. [Providing callback function](#5-providing-callback-function)
 6. [Setting the mode](#6-setting-the-mode)
 7. [Setting the error reporting mode](#7-setting-the-error-reporting-mode)
@@ -97,7 +97,7 @@ function foo() {
 foo(6, "this is valid", "this is also valid", "how about one more?");
 ```
   
-### 4. Optional repetable argument
+### 4. Optional repeatable argument
 The optional and repetable argument can be used together in a single signature. For example if `simpli.argc()` has to specific its signautre, it will look like this
 ``` javascript
 var simpli.argc = function() {
