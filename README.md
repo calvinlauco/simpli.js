@@ -18,7 +18,7 @@ Simpli.js ia a library that features detail run-time function arguments check an
 * Cross-Browser Compatibility (Support most of the modern browsers)
   
 ## Installation
-1. Extract the js folder and its content to your site directory  
+1. Extract the src folder and its content to your site directory  
 2. add the following code inside the ```<head>``` section of the webpage.  
 ``` html
 <!-- The Simpli.js core file -->
