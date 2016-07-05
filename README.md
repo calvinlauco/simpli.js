@@ -22,9 +22,9 @@ Simpli.js is a JavaScript library that features run-time function arguments chec
 2. add the following code inside the ```<head>``` section of the webpage.  
 ``` html
 <!-- The Simpli.js core file -->
-<script src="js/simpli-1.2.0.min.js" />
+<script src="js/simpli.min.js" />
 <!-- Include this line if you need the basic data structure module -->
-<script src="js/simpli-1.2.0.DataStructure.js" />
+<script src="js/simpli.DataStructure.js" />
 ```
 
 ## Arguments Check Example
@@ -157,9 +157,9 @@ foo("bar");
 ```
   
 ## API
-A full API documentation can be found on [http://yuhlau.github.io/simplijs/1.2.2/doc/](http://yuhlau.github.io/simplijs/1.2.2/doc/). 
+A full API documentation can be found on [http://yuhlau.github.io/simplijs/1.2.3/doc/](http://yuhlau.github.io/simplijs/1.2.3/doc/). 
   
-Moreover, you can also have a look to the unit test in the folder ```unitTest/``` or hosted unit tet page ([Basic](http://yuhlau.github.io/simplijs/1.2.2/unitTest/basic.html)|[simpli.argv()](http://yuhlau.github.io/simplijs/1.2.2/unitTest/argv.html)). It can gives you some ideas on how those functions are used.  
+Moreover, you can also have a look to the unit test in the folder ```unitTest/``` or hosted unit tet page ([Basic](http://yuhlau.github.io/simplijs/1.2.3/unitTest/basic.html)|[simpli.argv()](http://yuhlau.github.io/simplijs/1.2.3/unitTest/argv.html)). It can gives you some ideas on how those functions are used.  
   
 ## Arguments Check API
 ### simpli.argv(arguments, [...signature, callback])
@@ -267,7 +267,7 @@ Uncaught TypeError: anonymous("foo", 1, -->1<--): Expected 'boolean', 'number' g
 * Google Chrome on iOS (latest)
   
 ## History
-* 1 Jul, 2016. Version 1.2.2
+* 6 Jul, 2016. Version 1.2.3
   * Rename simpli.argv() to simpli.argv()
   * Introduce custom data type simpli.Type (experimental)
   * Variable-length argument must now be the last signature in the declaration
@@ -275,6 +275,7 @@ Uncaught TypeError: anonymous("foo", 1, -->1<--): Expected 'boolean', 'number' g
   * 2nd argument of simpli.isDecimal() is changed back to exact match
   * Update new unit test
   * Update document
+* Version 1.2.2 (Skipped)
 * Version 1.2.1 (Internal)
   * 2nd and 3rd arguments of simpli.isDecimal() now become an inclusive upper bound (in previous version it is an exact match)
 * 16 May, 2016. Version 1.2.0

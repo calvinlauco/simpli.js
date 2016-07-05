@@ -1,39 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>JSDoc: Source: simpli-1.2.2.js</title>
-
-    <script src="scripts/prettify/prettify.js"> </script>
-    <script src="scripts/prettify/lang-css.js"> </script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
-    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
-</head>
-
-<body>
-
-<div id="main">
-
-    <h1 class="page-title">Source: simpli-1.2.2.js</h1>
-
-    
-
-
-
-    
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>/**
+/**
  * Simpli.js
  * A small library consists of some useful and shorthand function
  *
  * Copyright (c) 2016 Yu H.
  * 
  * @author Yu H.
- * @version 1.2.2
+ * @version 1.2.3
  * @license The MIT License (MIT)
  * https://opensource.org/licenses/MIT
  **/
@@ -80,7 +52,7 @@ if (typeof String.prototype.nthIndexOf === "undefined") {
          * loop throught the string using the string length as iteration 
          * condition
          */
-        while(i&lt;l) {
+        while(i<l) {
             /*
              * use indexOf with progressively increment i to search for 
              * substring occurence 
@@ -97,7 +69,7 @@ if (typeof String.prototype.nthIndexOf === "undefined") {
             // keep an array of position for negative nth index
             position[posIndex++] = i;
         }
-        if (nthIndex &lt; 0) {
+        if (nthIndex < 0) {
             // calcuate the correct index for negative nth index
             targetIndex = posIndex + nthIndex;
             if (targetIndex >= 0) {
@@ -206,7 +178,7 @@ var getStackTrace = (function() {
                  * Regular Expression
                  */
                 i = (stack[0].match(_traceRegEx) === null)? 2: 1;
-                for(l=stack.length; i&lt;l; i++) {
+                for(l=stack.length; i<l; i++) {
                     // In Firefox, the last stack is sometimes an empty string
                     if (stack[i].length === 0) {
                         break;
@@ -293,7 +265,7 @@ var simpli;
     simpli = function() {
         // TODO: 
     };
-    simpli.version = "1.2.2";
+    simpli.version = "1.2.3";
     
     /**
      * This function wrap and return the console object according to the 
@@ -356,7 +328,7 @@ var simpli;
 
         // check if the array is a typed-array
         if (simpli.isArray(arg)) {
-            for (i=0,l=arg.length; i&lt;l; i++) {
+            for (i=0,l=arg.length; i<l; i++) {
                 if (lastElType === "array") {
                     lastElType = simpli.getClass(arg[i]);
                 } else {
@@ -401,7 +373,7 @@ var simpli;
      */
     simpli.isA = function(arg, classID) {
         // an class constructor is the same as a function
-        if (!simpli.isString(classID) &amp;&amp; !simpli.isFunction(classID)) {
+        if (!simpli.isString(classID) && !simpli.isFunction(classID)) {
             throw new TypeError("Expected argument 2 to be 'string' or "+
                 "constructor, '"+simpli.detailTypeOf(className) + "' given");
         }
@@ -425,8 +397,8 @@ var simpli;
              * existence of property "callee" because it is a unique 
              * property of Arguments
              */
-            (!simpli.isA(arguments, "Arguments") &amp;&amp; 
-                simpli.isDefined(arg) &amp;&amp; hasOwnProperty.call(arg, "callee"));
+            (!simpli.isA(arguments, "Arguments") && 
+                simpli.isDefined(arg) && hasOwnProperty.call(arg, "callee"));
     };
 
     /**
@@ -437,7 +409,7 @@ var simpli;
      */
     simpli.argumentsToArray = function(args) {
         var i, l, result=[];
-        for (i=0,l=args.length; i&lt;l; i++) {
+        for (i=0,l=args.length; i<l; i++) {
             result.push(args[i]);
         }
         return result;
@@ -498,15 +470,15 @@ var simpli;
     simpli.isDeepDefined = function() {
         var len = arguments.length;
         var root, prop, i;
-        if (len &lt; 1) {
+        if (len < 1) {
             throw new TypeError("Expected argument 1 to have at least  " + 
                 "1 object, 0 given");
         }
 
         root = arguments[0];
-        for (i=1; i&lt;len; i++) {
+        for (i=1; i<len; i++) {
             prop = arguments[i];
-            if (!simpli.isInteger(prop) &amp;&amp; !simpli.isString(prop)) {
+            if (!simpli.isInteger(prop) && !simpli.isString(prop)) {
                 throw new TypeError("Expected argument "+i+" to be "+
                     "'integer' or 'string', "+(typeof prop)+" given");
             }
@@ -529,7 +501,7 @@ var simpli;
      * @memberof simpli
      */
     simpli.isSet = function(arg) {
-        return (simpli.isDefined(arg) &amp;&amp; !simpli.isNull(arg));
+        return (simpli.isDefined(arg) && !simpli.isNull(arg));
     }
     
     /**
@@ -556,8 +528,8 @@ var simpli;
      */
     simpli.isObject = function(arg) {
         // exclude null which gives object when applying typeof
-        return (typeof arg === "object") &amp;&amp; 
-            !(simpli.isArray(arg)) &amp;&amp; (arg !== null);
+        return (typeof arg === "object") && 
+            !(simpli.isArray(arg)) && (arg !== null);
     };
     
     /**
@@ -607,13 +579,13 @@ var simpli;
         if (className === "Array") {
             return true;
         // some old IE browsers will return [object Object] for Array
-        } else if(simpli.getClass([]) !== "Array" &amp;&amp; className === "Object") {
+        } else if(simpli.getClass([]) !== "Array" && className === "Object") {
             // Fix for those old IE browsers
             /*
              * It is hard to have a robust array check for these browsers, 
              * instead an array-like check is performed
              */
-            return simpli.isObject(arg) &amp;&amp; simpli.isNumber(arg.length);
+            return simpli.isObject(arg) && simpli.isNumber(arg.length);
         } else {
             return false;
         }
@@ -642,7 +614,7 @@ var simpli;
          * false(boolean) and ""(string) will return as integer and returns 
          * true when applying % operator with argument 1
          */
-        return simpli.isNumber(arg) &amp;&amp; (arg%1 === 0);
+        return simpli.isNumber(arg) && (arg%1 === 0);
     };
     
     /**
@@ -680,7 +652,7 @@ var simpli;
          * number and it always satisfies the decimal requirement because you
          * can append any number of 0s to the decimal part of an integer
          */
-        if (simpli.isDefined(decimal) &amp;&amp; parts.length === 2) {
+        if (simpli.isDefined(decimal) && parts.length === 2) {
             hasDecimal = true;
             if (!simpli.isInteger(decimal)) {
                 throw new TypeError("Expected argument 3 to be 'integer', '" +
@@ -688,9 +660,9 @@ var simpli;
             }
         }
         if (hasWhole || hasDecimal) {
-            return (hasWhole? (parts[0].length===whole): true) &amp;&amp; 
+            return (hasWhole? (parts[0].length===whole): true) && 
                 (hasDecimal? ((parts.length===2)?
-                    parts[1].length&lt;=decimal: false): true);
+                    parts[1].length<=decimal: false): true);
         } else {
             /* 
              * if whole and decimal is not specified, any number is 
@@ -709,7 +681,7 @@ var simpli;
      * @memberof simpli
      */
     simpli.isChar = function(arg) {
-        return (simpli.isString(arg) &amp;&amp; arg.length === 1);
+        return (simpli.isString(arg) && arg.length === 1);
     }
     
     /**
@@ -739,7 +711,7 @@ var simpli;
                 return false;
             }
         }
-        for (i=0; i&lt;l; i++) {
+        for (i=0; i<l; i++) {
             if (!simpli.isObject(arg[i])) {
                 return false;
             }
@@ -771,7 +743,7 @@ var simpli;
                 return false;
             }
         }
-        for (i=0; i&lt;l; i++) {
+        for (i=0; i<l; i++) {
             if (!simpli.isNumber(arg[i])) {
                 return false;
             }
@@ -803,7 +775,7 @@ var simpli;
                 return false;
             }
         }
-        for (i=0; i&lt;l; i++) {
+        for (i=0; i<l; i++) {
             if (!simpli.isFunction(arg[i])) {
                 return false;
             }
@@ -835,7 +807,7 @@ var simpli;
                 return false;
             }
         }
-        for (i=0; i&lt;l; i++) {
+        for (i=0; i<l; i++) {
             if (!simpli.isBoolean(arg[i])) {
                 return false;
             }
@@ -867,7 +839,7 @@ var simpli;
                 return false;
             }
         }
-        for (i=0; i&lt;l; i++) {
+        for (i=0; i<l; i++) {
             if (!simpli.isInteger(arg[i])) {
                 return false;
             }
@@ -909,7 +881,7 @@ var simpli;
                 return false;
             }
         }
-        for (i=0; i&lt;l; i++) {
+        for (i=0; i<l; i++) {
             if (!simpli.isString(arg[i])) {
                 return false;
             }
@@ -984,7 +956,7 @@ var simpli;
         this.error = simpli.argv.MISMATCH_ARGNUMBER;
 
         // update the argv structure
-        for(i=0; i&lt;argsLen; i++) {
+        for(i=0; i<argsLen; i++) {
             argvStruct[i].valid = false;
             argvStruct[i].error = simpli.argv.MISMATCH_ARGNUMBER;
         }
@@ -1052,7 +1024,7 @@ var simpli;
         i = 0;
         l = argvStruct.length;
         argMessage = "";
-        while(i &lt; l) {
+        while(i < l) {
             // display different argument value according to the data type
             argValue = argvStruct[i].value
             argValue = (simpli.isString(argValue))? 
@@ -1062,10 +1034,10 @@ var simpli;
                     toString.call(argValue));
 
             // highlight the invalid argument
-            argMessage += (i===index)? "-->"+argValue+"&lt;--": argValue;
+            argMessage += (i===index)? "-->"+argValue+"<--": argValue;
 
             // add comma delimiter until the last argument
-            if (++i &lt; l) {
+            if (++i < l) {
                 argMessage += ", ";
             }
         }
@@ -1075,7 +1047,7 @@ var simpli;
         // check if Stack Trace is available
         if (!simpli.isNull(stackTrace)) {
             found = false;
-            for (i=0,l=stackTrace.length; i&lt;l; i++) {
+            for (i=0,l=stackTrace.length; i<l; i++) {
                 // find the Stack Trace corresponding to the invoking function
                 if (stackTrace[i].invokedBy === invokedBy || 
                     stackTrace[i].invokedBy === "Function."+invokedBy) {
@@ -1110,7 +1082,7 @@ var simpli;
             line: line, 
             column: column
         };
-        for(i=0,l=argvStruct.length; i&lt;l; i++) {
+        for(i=0,l=argvStruct.length; i<l; i++) {
             argvInstance = argvStruct[i];
 
             // record arguments
@@ -1246,11 +1218,11 @@ var simpli;
 
         // if the argument is optional, check whether the argument is defined
         // first to reduce unnecessary data type check
-        if (argvInstance.optional &amp;&amp; !simpli.isDefined(argvInstance.value)) {
+        if (argvInstance.optional && !simpli.isDefined(argvInstance.value)) {
             returnValue = true;
         }
 
-        for(i=0,l=argvInstance.signature.length; i&lt;l; i++) {
+        for(i=0,l=argvInstance.signature.length; i<l; i++) {
             instance = argvInstance.signature[i];
             // check the validity of datatype instance
             if (simpli.isA(instance, simpli.Type)) {
@@ -1296,7 +1268,7 @@ var simpli;
                 // group always has 1 matched string and 3 mathing groups
                 // In modern browsers, unmatched group will be undefined while 
                 // in pld Internet Explorer, unmatched group will have value ""
-                if (simpli.isDefined(group[3]) &amp;&amp; group[3] !== "") {
+                if (simpli.isDefined(group[3]) && group[3] !== "") {
                     // array with upper bound size
                     dataType = group[2] + "[]";
                     size = parseInt(group[3]);
@@ -1384,7 +1356,7 @@ var simpli;
             size;
 
         return (function(arg) {
-            if (self.isOptional() &amp;&amp; !simpli.isDefined(arg)) {
+            if (self.isOptional() && !simpli.isDefined(arg)) {
                 // argument is optional
                 return true;
             }
@@ -1394,10 +1366,10 @@ var simpli;
                 if (!simpli.isArray(arg)) { return false; }
                 // determine if the array size is specified
                 size = self.getSize();
-                if (size > 0 &amp;&amp; arg.length > size) { return false; }
+                if (size > 0 && arg.length > size) { return false; }
 
                 // check for validity of array elements
-                for(var i=0; i&lt;arg.length; i++) {
+                for(var i=0; i<arg.length; i++) {
                     if (!self.getCallback()(arg[i])) { return false; }
                 }
                 return true;
@@ -1496,7 +1468,7 @@ var simpli;
                 throw new TypeError("Expected argument 1 to be 'integer', '"+
                     typeof(size)+"'' given");
             }
-            if (size &lt;= 0) {
+            if (size <= 0) {
                 throw new TypeError("Expected argument 1 to be greater than "+
                     "0, "+size+" given");
             }
@@ -1580,7 +1552,7 @@ var simpli;
 
         // prepare arguments signature array
         if (thisArgsLen > 2 || 
-            (thisArgsLen === 2 &amp;&amp; 
+            (thisArgsLen === 2 && 
                 simpli.isString(thisArgs[1]) ||
                 simpli.isA(thisArgs[1], simpli.Type)
             )) {
@@ -1588,8 +1560,8 @@ var simpli;
             // list of arguments signature provided as parameters
             signatures = thisArgs;
             signatures.shift();
-        } else if (thisArgsLen === 2 &amp;&amp; 
-            (signatures = thisArgs[1]) &amp;&amp; 
+        } else if (thisArgsLen === 2 && 
+            (signatures = thisArgs[1]) && 
             simpli.isArray(signatures)) {
 
             // list of arguments signature provided as array
@@ -1604,7 +1576,7 @@ var simpli;
         signLen = simpli.isDefined(signatures)? signatures.length: 0;
 
         // prepare the argv structure
-        for(i=0; i&lt;argsLen; i++) {
+        for(i=0; i<argsLen; i++) {
             argvStruct.push({
                 // argument validity
                 valid: false, 
@@ -1635,7 +1607,7 @@ var simpli;
 
         signI=0;
         argI=0;
-        while(signI&lt;signLen) {
+        while(signI<signLen) {
             signInstance = signatures[signI];
             // `isOptional` is a flag indicating whether the current argument 
             // is optional.
@@ -1657,14 +1629,14 @@ var simpli;
                 isOptional = (
                     // an argument is optional if the signature is surrounded 
                     // by "[]"
-                    _argv.optionalRegEx.test(signInstance) &amp;&amp; 
+                    _argv.optionalRegEx.test(signInstance) && 
                     // remove the "[]"
                     (signInstance = signInstance.slice(1,-1)));
 
                 // test if the signature specificies repetable argument
                 isRepeatable += (
                     // repeatable argument
-                    signInstance.slice(0,3)==="..."  &amp;&amp; 
+                    signInstance.slice(0,3)==="..."  && 
                     // remove the "..."
                     (signInstance = signInstance.slice(3)))? 1: 0;
 
@@ -1674,7 +1646,7 @@ var simpli;
                 // convert the signature list to array of signatures
                 signArray = signInstance.split("|");
                 // check the validity of each signature in the array
-                for (i=0,l=signArray.length; i&lt;l; i++) {
+                for (i=0,l=signArray.length; i<l; i++) {
                     if (!_argv.typeRegEx.test(signArray[i])) {
                         throw new TypeError("Expected signature to be one of "+
                             "the valid types, '"+signArray[i]+"' given");
@@ -1689,7 +1661,7 @@ var simpli;
             }
 
             // update the argvStruct if there are still arguments
-            if (argI &lt; argsLen) {
+            if (argI < argsLen) {
                 argvStruct[argI].expected = expected;
                 argvStruct[argI].signature = signArray;
                 argvStruct[argI].optional = isOptional;
@@ -1734,7 +1706,7 @@ var simpli;
 
                 // make the rest of the arguments to be the type of the 
                 // variable-length signature
-                for (argI=argI+1; argI&lt;argsLen; argI++) {
+                for (argI=argI+1; argI<argsLen; argI++) {
                     argvStruct[argI].expected = expected;
                     argvStruct[argI].signature = signArray;
                     argvStruct[argI].optional = isOptional;
@@ -1754,14 +1726,14 @@ var simpli;
         // there are still arguments left after iterating through the 
         // signature array
         // |arguments| > |signature|
-        if (argI &lt; argsLen) {
+        if (argI < argsLen) {
             invalidObj = _argv.MISMATCH_ARGNUMBER(argvStruct, signLen);
         }
 
         // argument type check procedure
         if (simpli.isNull(invalidObj)) {
             // Perform argument type check according to argv structure
-            for(i=0,l=argvStruct.length; i&lt;l; i++) {
+            for(i=0,l=argvStruct.length; i<l; i++) {
                 argvInstance = argvStruct[i];
 
                 if (!_argv.checkArg(argvInstance)) {
@@ -1781,7 +1753,7 @@ var simpli;
             if (!simpli.isNull(stackTrace)) {
                 found = false;
                 stackTraceLen=stackTrace.length
-                for (i=0; i&lt;stackTraceLen; i++) {
+                for (i=0; i<stackTraceLen; i++) {
                     if(stackTrace[i].invokedBy === "simpli.argv" || 
                         stackTrace[i].invokedBy === "Function.simpli.argv") {
 
@@ -1828,7 +1800,7 @@ var simpli;
      */
     simpli.argv.mode = function(mode) {
         if (simpli.isDefined(mode)) {
-            if (mode !== simpli.argv.MODE_STRICT &amp;&amp; 
+            if (mode !== simpli.argv.MODE_STRICT && 
                 mode !== simpli.argv.MODE_EXTEND) {
 
                 throw new TypeError("Unrecognized mode '"+mode+"'");
@@ -1848,7 +1820,7 @@ var simpli;
      */
     simpli.argv.errorMode = function(errorMode) {
         if (simpli.isDefined(errorMode)) {
-            if (errorMode !== simpli.argv.ERRMODE_ERROR &amp;&amp; 
+            if (errorMode !== simpli.argv.ERRMODE_ERROR && 
                 errorMode !== simpli.argv.ERRMODE_SILENT) {
 
                 throw new TypeError("Unrecognized error mode '"+errorMode+"'");
@@ -1861,26 +1833,3 @@ var simpli;
     simpli.argv.mode(simpli.argv.MODE_EXTEND);
     simpli.argv.errorMode(simpli.argv.ERRMODE_ERROR);
 })(typeof window === "undefined"? global: window);
-</code></pre>
-        </article>
-    </section>
-
-
-
-
-</div>
-
-<nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="simpli.Type.html">Type</a></li></ul><h3>Namespaces</h3><ul><li><a href="simpli.html">simpli</a></li><li><a href="simpli.argv.html">argv</a></li></ul>
-</nav>
-
-<br class="clear">
-
-<footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Jul 02 2016 15:01:22 GMT+0800 (China Standard Time)
-</footer>
-
-<script> prettyPrint(); </script>
-<script src="scripts/linenumber.js"> </script>
-</body>
-</html>

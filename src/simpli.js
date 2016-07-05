@@ -5,7 +5,7 @@
  * Copyright (c) 2016 Yu H.
  * 
  * @author Yu H.
- * @version 1.2.2
+ * @version 1.2.3
  * @license The MIT License (MIT)
  * https://opensource.org/licenses/MIT
  **/
@@ -265,7 +265,7 @@ var simpli;
     simpli = function() {
         // TODO: 
     };
-    simpli.version = "1.2.2";
+    simpli.version = "1.2.3";
     
     /**
      * This function wrap and return the console object according to the 

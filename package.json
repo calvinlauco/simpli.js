@@ -1,0 +1,28 @@
+{
+  "name": "simpli.js",
+  "version": "1.2.3",
+  "description": "Simpli a JavaScript library featuring run-time function arguments check and Data Structure classes",
+  "main": "src/simpli.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuhlau/simpli.js.git"
+  },
+  "keywords": [
+    "JavaScript",
+    "simpli",
+    "js",
+    "arguments",
+    "check",
+    "data",
+    "structure"
+  ],
+  "author": "Yu H.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yuhlau/simpli.js/issues"
+  },
+  "homepage": "https://github.com/yuhlau/simpli.js#readme"
+}

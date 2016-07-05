@@ -5,7 +5,7 @@
  * Copyright (c) 2016 Yu H.
  * 
  * @author Yu H.
- * @version 1.2.0
+ * @version 1.2.3
  * @license The MIT License (MIT)
  * https://opensource.org/licenses/MIT
  **/
