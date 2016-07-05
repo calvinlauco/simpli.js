@@ -157,7 +157,7 @@ foo("bar");
 ```
   
 ## API
-A full API documentation can be found on [http://yuhlau.github.io/simplijs/1.2.3/doc/](http://yuhlau.github.io/simplijs/1.2.3/doc/). 
+A full API documentation can be found on [http://yuhlau.github.io/simplijs/1.2.3/doc/index.html](http://yuhlau.github.io/simplijs/1.2.3/doc/index.html). 
   
 Moreover, you can also have a look to the unit test in the folder ```unitTest/``` or hosted unit tet page ([Basic](http://yuhlau.github.io/simplijs/1.2.3/unitTest/basic.html)|[simpli.argv()](http://yuhlau.github.io/simplijs/1.2.3/unitTest/argv.html)). It can gives you some ideas on how those functions are used.  
   
