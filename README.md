@@ -18,6 +18,11 @@ Simpli.js is a JavaScript library that features run-time function arguments chec
 * Cross-Browser Compatibility (Support most of the modern browsers)
   
 ## Installation
+### npm
+1. ```npm install simpli.js```  
+2. ```var simpli = require("simpli.js");```  
+  
+### Browser
 1. Extract the src folder and its content to your site directory  
 2. add the following code inside the ```<head>``` section of the webpage.  
 ``` html
@@ -267,6 +272,8 @@ Uncaught TypeError: anonymous("foo", 1, -->1<--): Expected 'boolean', 'number' g
 * Google Chrome on iOS (latest)
   
 ## History
+* 6 Jul, 2016. Version 1.2.4
+  * Compatible with Node.js module
 * 6 Jul, 2016. Version 1.2.3
   * Rename simpli.argv() to simpli.argv()
   * Introduce custom data type simpli.Type (experimental)

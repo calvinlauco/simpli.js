@@ -1,4 +1,6 @@
 ## Version History
+* 6 Jul, 2016. Version 1.2.4
+  * Compatible with Node.js module
 * 6 Jul, 2016. Version 1.2.3
   * Rename simpli.argc() to simpli.argv()
   * Introduce custom data type simpli.Type (experimental)
