@@ -1,4 +1,22 @@
 ## Version History
+* 1 Jul, 2016. Version 1.2.2
+  * Rename simpli.argc() to simpli.argv()
+  * Introduce custom data type simpli.Type (experimental)
+  * Variable-length argument must now be the last signature in the declaration
+  * Option argument must now appear at the end of the declaration
+  * 2nd argument of simpli.isDecimal() is changed back to exact match
+  * Update new unit test
+  * Update document
+* Version 1.2.1 (Internal)
+  * 2nd and 3rd arguments of simpli.isDecimal() now become an inclusive upper bound (in previous version it is an exact match)
+* 16 May, 2016. Version 1.2.0
+  * Update to version 1.2.0 (1.1.0 skipped)
+  * A complete redesign of Simpli.js
+  * Redesign run-time argument checking
+  * Remove DOM manipulation
+  * Temporarily remove some data structures, and they will be added back in the future version
+  * Update new unit test
+  * Update document
 * 20 Feb, 216. Version 1.0.6
   * Update to version 1.0.6
   * Redesign simpli.extend()
