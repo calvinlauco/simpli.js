@@ -162,9 +162,9 @@ foo("bar");
 ```
   
 ## API
-A full API documentation can be found on [http://yuhlau.github.io/simplijs/1.2.3/doc/index.html](http://yuhlau.github.io/simplijs/1.2.3/doc/index.html). 
+A full API documentation can be found on [https://calvinlauco.github.io/simplijs/1.2.3/doc/index.html](https://calvinlauco.github.io/simplijs/1.2.3/doc/index.html). 
   
-Moreover, you can also have a look to the unit test in the folder ```unitTest/``` or hosted unit tet page ([Basic](http://yuhlau.github.io/simplijs/1.2.3/unitTest/basic.html)|[simpli.argv()](http://yuhlau.github.io/simplijs/1.2.3/unitTest/argv.html)). It can gives you some ideas on how those functions are used.  
+Moreover, you can also have a look to the unit test in the folder ```unitTest/``` or hosted unit tet page ([Basic](https://calvinlauco.github.io/simplijs/1.2.3/unitTest/basic.html)|[simpli.argv()](https://calvinlauco.github.io/simplijs/1.2.3/unitTest/argv.html)). It can gives you some ideas on how those functions are used.  
   
 ## Arguments Check API
 ### simpli.argv(arguments, [...signature, callback])
@@ -254,7 +254,7 @@ Uncaught TypeError: anonymous("foo", 1, -->1<--): Expected 'boolean', 'number' g
 ```
   
 ## Data Type Hierarchy
-![Data Type Hierarchy Diagram](http://yuhlau.github.io/simplijs/1.2.0/datatype-hierarchy.png)  
+![Data Type Hierarchy Diagram](https://calvinlauco.github.io/simplijs/1.2.0/datatype-hierarchy.png)  
 * Strictly speaking, all JavaScript variable is `Object`. However, this definition of `Object` is too board and usually does not reflect most developer idea of `Object`. So in Simpli.js `Object` refers only to variable declared using object literal
 * In JavaScript, all number are in 64bit floating point. It is impossible to distinguish betwen `Integer` and `Decimal` as other programming languages
 * To be consistent with C-language, `Character Array` is not an array of `Character` but instead a `String`
@@ -297,5 +297,5 @@ Uncaught TypeError: anonymous("foo", 1, -->1<--): Expected 'boolean', 'number' g
 Detail version history can be found in HISTORY.md
   
 ## License
-Copyright (c) Yu H.  
+Copyright (c) calvinlauco 
 Published under The MIT License (MIT)
